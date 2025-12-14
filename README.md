@@ -1,28 +1,18 @@
-<h1 align="center">
-💰 Quản lý Chi tiêu Cá nhân
+💰 Quản lý Chi tiêu Cá nhân (Expense Tracker)
 
-
-
-
-
-<small>(Expense Tracker)</small>
-</h1>
-
-<p align="center">
-<em>Đồ án môn học: <strong>Lập trình Web với PHP & MySQL</strong></em>
-</p>
-
-<p align="center">
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/Language-PHP-777BB4%3Fstyle%3Dfor-the-badge%26logo%3Dphp%26logoColor%3Dwhite" alt="PHP">
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/Database-MySQL-4479A1%3Fstyle%3Dfor-the-badge%26logo%3Dmysql%26logoColor%3Dwhite" alt="MySQL">
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/Frontend-Bootstrap-7952B3%3Fstyle%3Dfor-the-badge%26logo%3Dbootstrap%26logoColor%3Dwhite" alt="Bootstrap">
-</p>
-
-<hr>
+Đồ án môn học: Lập trình Web với PHP & MySQL
 
 📖 Giới thiệu
 
-Expense Tracker là website giúp người dùng ghi chép thu chi hàng ngày, quản lý ví tiền và xem báo cáo tài chính trực quan. Dự án được viết bằng PHP thuần (Native), tổ chức code theo mô hình Module, không sử dụng Framework.
+Expense Tracker là website giúp người dùng ghi chép thu chi hàng ngày, quản lý ví tiền và xem báo cáo tài chính trực quan.
+
+Dự án được xây dựng với tiêu chí:
+
+Ngôn ngữ: PHP thuần (Native PHP), không dùng Framework.
+
+Cấu trúc: Tổ chức code theo Module (dễ chia việc nhóm).
+
+Giao diện: Sử dụng Bootstrap 5.
 
 👥 Phân công nhóm (5 Thành viên)
 
@@ -30,76 +20,72 @@ STT
 
 Thành viên
 
-Vai trò (Module)
+Module phụ trách
 
 🛠️ Nhiệm vụ chi tiết
 
 1
 
-Bạn số 1 
-
-
-
- (Leader)
+[Tên Trưởng Nhóm]
 
 Auth & Users
 
-🔐 Quản lý Tài khoản, Đăng nhập/Đăng ký, Setup Database
+Quản lý Tài khoản, Đăng nhập, Setup Database
 
 2
 
-Bạn số 2
+[Tên Thành Viên 2]
 
 Categories
 
-📂 Quản lý Danh mục chi tiêu (Ăn uống, Lương, Xăng xe...)
+Quản lý Danh mục (Ăn uống, Lương, Xăng xe...)
 
 3
 
-Bạn số 3
+[Tên Thành Viên 3]
 
 Wallets
 
-💳 Quản lý Ví tiền / Nguồn tiền (Tiền mặt, ATM, Ví điện tử)
+Quản lý Ví tiền (Tiền mặt, ATM, Ví điện tử)
 
 4
 
-Bạn số 4
+[Tên Thành Viên 4]
 
 Budgets
 
-📉 Quản lý Hạn mức chi tiêu (Lập ngân sách dự kiến)
+Quản lý Hạn mức chi tiêu (Lập ngân sách)
 
 5
 
-Bạn số 5
+[Tên Thành Viên 5]
 
 Transactions
 
-💸 Quản lý Giao dịch Thu/Chi, Báo cáo & Dashboard
+Giao dịch Thu/Chi, Báo cáo & Dashboard
 
 ⚙️ Hướng dẫn Cài đặt & Chạy
 
 Để chạy dự án trên máy cá nhân (Localhost), bạn làm theo 4 bước sau:
 
-1️⃣ Tải mã nguồn
+1. Tải mã nguồn
 
 Download file .zip hoặc Clone dự án về thư mục htdocs của XAMPP:
 
 git clone [https://github.com/vjettejv/expense-tracker-project.git](https://github.com/vjettejv/expense-tracker-project.git)
 
 
-2️⃣ Cài đặt Database
+2. Cài đặt Database
 
-Mở phpMyAdmin (thường là http://localhost/phpmyadmin).
+Mở phpMyAdmin (truy cập http://localhost/phpmyadmin).
 
 Tạo database mới tên: expense_tracker.
 
-Chọn tab Import ➔ Chọn file database/expense_tracker.sql ➔ Nhấn Go.
+Chọn tab Import ➔ Chọn file database/expense_tracker.sql trong thư mục dự án ➔ Nhấn Go.
 
-3️⃣ Cấu hình kết nối
+3. Cấu hình kết nối
 
-Mở file config/db.php và kiểm tra thông tin:
+Mở file config/db.php và kiểm tra thông tin kết nối:
 
 $servername = "localhost";
 $username   = "root"; // Mặc định XAMPP
@@ -107,7 +93,7 @@ $password   = "";     // Mặc định XAMPP để trống
 $dbname     = "expense_tracker";
 
 
-4️⃣ Khởi chạy
+4. Khởi chạy
 
 Mở trình duyệt và truy cập đường dẫn:
 
@@ -115,22 +101,21 @@ http://localhost/expense-tracker-project/
 
 📂 Cấu trúc thư mục
 
-<pre>
-expense-tracker/
-├── <b>assets/</b>                 # CSS, JS, Images
-├── <b>config/</b>                 # Cấu hình Database
-├── <b>database/</b>               # File SQL backup
-├── <b>includes/</b>               # Giao diện dùng chung (Header, Footer...)
-├── <b>modules/</b>                # KHÔNG GIAN LÀM VIỆC CHÍNH
-│   ├── <b>auth/</b>               # Đăng nhập/Đăng ký
-│   ├── <b>users/</b>              # Module của Leader
-│   ├── <b>categories/</b>         # Module của Bạn số 2
-│   ├── <b>wallets/</b>            # Module của Bạn số 3
-│   ├── <b>budgets/</b>            # Module của Bạn số 4
-│   └── <b>transactions/</b>       # Module của Bạn số 5
-└── <b>index.php</b>               # Trang Dashboard
-</pre>
+Dự án được tổ chức gọn gàng để tránh xung đột code:
 
-<p align="center">
-<i>Được thực hiện với ❤️ bởi Nhóm ...</i>
-</p>
+expense-tracker/
+├── assets/                 # CSS, JS, Images, Thư viện
+├── config/                 # Cấu hình Database
+├── database/               # File SQL backup
+├── includes/               # Giao diện dùng chung (Header, Footer, Sidebar)
+├── modules/                # KHÔNG GIAN LÀM VIỆC CHÍNH
+│   ├── auth/               # Đăng nhập/Đăng ký
+│   ├── users/              # Module của Leader
+│   ├── categories/         # Module của Bạn số 2
+│   ├── wallets/            # Module của Bạn số 3
+│   ├── budgets/            # Module của Bạn số 4
+│   └── transactions/       # Module của Bạn số 5
+└── index.php               # Trang Dashboard
+
+
+Dự án phục vụ mục đích học tập.
