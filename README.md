@@ -4,12 +4,13 @@
 <p>
 <em>Dự án môn học: <strong>Lập trình Web với PHP & MySQL</strong></em>
 </p>
+</div>
 
 <hr />
 
 📖 1. Giới thiệu
 
-Expense Tracker Pro là phiên bản nâng cấp với tính năng Phân quyền (Role-based Authorization). Hệ thống phân chia rõ ràng giữa hai vai trò:
+Expense Tracker là phiên bản nâng cấp với tính năng Phân quyền (Role-based Authorization). Hệ thống phân chia rõ ràng giữa hai vai trò:
 
 Admin: Quản lý toàn bộ người dùng, xem báo cáo tổng hợp, có quyền khóa/mở khóa tài khoản.
 
@@ -17,38 +18,23 @@ User: Chỉ quản lý dữ liệu cá nhân (Ví, Giao dịch) của chính mì
 
 🌟 Tính năng nổi bật mới cập nhật:
 
-[x] Phân quyền Admin/User: Tự động điều hướng sau khi đăng nhập.
+$$x$$
 
-[x] Bảo mật: Chặn người dùng truy cập vào trang Admin trái phép.
+ Phân quyền Admin/User: Tự động điều hướng sau khi đăng nhập.
 
-[x] Khóa tài khoản: Admin có thể khóa (banned) tài khoản vi phạm, user bị khóa sẽ không thể đăng nhập.
+$$x$$
 
-[x] Giao diện Login: Thiết kế hiện đại (Instagram Style) với thông báo Toast.
+ Bảo mật: Chặn người dùng truy cập vào trang Admin trái phép.
 
-📂 2. Cấu trúc thư mục (Cập nhật)
+$$x$$
 
-Dự án được tổ chức lại để tách biệt khu vực Admin và User:
+ Khóa tài khoản: Admin có thể khóa (banned) tài khoản vi phạm, user bị khóa sẽ không thể đăng nhập.
 
-<pre>
-expense-tracker/
-├── <b>admin/</b>                  <span style="color: red"># [MỚI] Khu vực dành riêng cho Admin (Dashboard, Quản lý User)</span>
-├── <b>assets/</b>                 <span style="color: gray"># CSS, JS, Images, Thư viện</span>
-├── <b>config/</b>                 <span style="color: gray"># Cấu hình Database & Hằng số</span>
-├── <b>database/</b>               <span style="color: gray"># File SQL backup (expense_tracker_pro.sql)</span>
-├── <b>includes/</b>               <span style="color: gray"># Giao diện dùng chung (Header, Footer, Sidebar)</span>
-├── <b>modules/</b>                <span style="color: gray"># CÁC MODULE CHỨC NĂNG</span>
-│   ├── <b>auth/</b>               <span style="color: blue"># Đăng nhập/Đăng ký/Logout (Có check quyền)</span>
-│   ├── <b>users/</b>              <span style="color: gray"># Quản lý hồ sơ cá nhân</span>
-│   ├── <b>categories/</b>         <span style="color: gray"># Quản lý Danh mục</span>
-│   ├── <b>wallets/</b>            <span style="color: gray"># Quản lý Ví tiền</span>
-│   ├── <b>budgets/</b>            <span style="color: gray"># Quản lý Hạn mức</span>
-│   └── <b>transactions/</b>       <span style="color: gray"># Quản lý Giao dịch</span>
-└── <b>index.php</b>               <span style="color: gray"># Dashboard cho User thường</span>
-</pre>
+$$x$$
 
-👥 3. Phân công nhóm (5 Thành viên)
+ Giao diện Login: Thiết kế hiện đại (Instagram Style) với thông báo Toast.
 
-<!-- Bảng dùng HTML để đảm bảo chia cột đẹp -->
+👥 2. Phân công nhóm (5 Thành viên)
 
 <table width="100%">
 <thead>
@@ -64,19 +50,17 @@ expense-tracker/
 <td align="center">1</td>
 <td><strong>Nguyễn Hà Đức Việt</strong>
 
-
-
 <em>(Leader)</em></td>
+
 <td><code>Auth & Admin</code></td>
 <td>🔐 Code Login/Logout (Check quyền, MD5).
 
-
-
 👮 Xây dựng trang Admin Dashboard, Khóa/Mở tài khoản User.</td>
+
 </tr>
 <tr>
 <td align="center">2</td>
-<td><strong>Đàm Đình Long</strong></td>
+<td><strong>Đỗ Thị Thuý Quỳnh</strong></td>
 <td><code>Categories</code></td>
 <td>📂 CRUD Danh mục. Xử lý logic hiển thị danh mục riêng của User + danh mục chung của hệ thống.</td>
 </tr>
@@ -94,14 +78,14 @@ expense-tracker/
 </tr>
 <tr>
 <td align="center">5</td>
-<td><strong>Đỗ Thị Thuý Quỳnh</strong></td>
+<td><strong>Đàm Đình Long</strong></td>
 <td><code>Transactions</code></td>
 <td>💸 CRUD Giao dịch. Thống kê thu chi cá nhân cho User và Báo cáo tổng cho Admin.</td>
 </tr>
 </tbody>
 </table>
 
-⚙️ 4. Hướng dẫn Cài đặt & Chạy
+⚙️ 3. Hướng dẫn Cài đặt & Chạy
 
 Để chạy dự án, bạn làm theo 4 bước sau:
 
@@ -116,7 +100,7 @@ git clone [https://github.com/vjettejv/expense-tracker.git](https://github.com/v
 
 Mở phpMyAdmin.
 
-Tạo database mới tên: expense_tracker.
+Tạo database mới tên: expense_tracker
 
 Import file database/expense_tracker.sql.
 
@@ -140,9 +124,30 @@ $dbname     = "expense_tracker"; // Chú ý tên DB mới
 
 Mở trình duyệt và truy cập:
 
-http://localhost/expense-tracker-project/
+http://localhost/expense-tracker/
+
+📂 4. Cấu trúc thư mục (Cập nhật)
+
+Dự án được tổ chức lại để tách biệt khu vực Admin và User:
+
+<pre>
+expense-tracker/
+├── <b>admin/</b>                  <span style="color: red"># [MỚI] Khu vực dành riêng cho Admin (Dashboard, Quản lý User)</span>
+├── <b>assets/</b>                 <span style="color: gray"># CSS, JS, Images, Thư viện</span>
+├── <b>config/</b>                 <span style="color: gray"># Cấu hình Database & Hằng số</span>
+├── <b>database/</b>               <span style="color: gray"># File SQL backup (expense_tracker_pro.sql)</span>
+├── <b>includes/</b>               <span style="color: gray"># Giao diện dùng chung (Header, Footer, Sidebar)</span>
+├── <b>modules/</b>                <span style="color: gray"># CÁC MODULE CHỨC NĂNG</span>
+│   ├── <b>auth/</b>               <span style="color: blue"># Đăng nhập/Đăng ký/Logout (Có check quyền)</span>
+│   ├── <b>users/</b>              <span style="color: gray"># Quản lý hồ sơ cá nhân</span>
+│   ├── <b>categories/</b>         <span style="color: gray"># Quản lý Danh mục</span>
+│   ├── <b>wallets/</b>            <span style="color: gray"># Quản lý Ví tiền</span>
+│   ├── <b>budgets/</b>            <span style="color: gray"># Quản lý Hạn mức</span>
+│   └── <b>transactions/</b>       <span style="color: gray"># Quản lý Giao dịch</span>
+└── <b>index.php</b>               <span style="color: gray"># Dashboard cho User thường</span>
+</pre>
 
 <hr>
 <p align="center">
-<i>Được thực hiện với ❤️ bởi Nhóm 2</i>
+<i>Được thực hiện với ❤️ bởi Nhóm 5</i>
 </p>
