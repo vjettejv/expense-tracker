@@ -1,5 +1,5 @@
 <div align="center">
-<h1>💰 QUẢN LÝ CHI TIÊU CÁ NHÂN (PRO)</h1>
+<h1>💰 QUẢN LÝ CHI TIÊU CÁ NHÂN</h1>
 <h3>(Expense Tracker with Authorization)</h3>
 <p>
 <em>Dự án môn học: <strong>Lập trình Web với PHP & MySQL</strong></em>
