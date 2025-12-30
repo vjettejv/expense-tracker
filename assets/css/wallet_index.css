@@ -1,0 +1,74 @@
+
+.tieu-de-trang {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #eee;
+}
+
+.tieu-de-trang h2 {
+    color: #333;
+    margin: 0;
+}
+
+/* Nút thêm mới */
+.nut-them {
+    background-color: #28a745;
+    /* Màu xanh lá cho khác danh mục */
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.nut-them:hover {
+    background-color: #218838;
+}
+
+/* Bảng danh sách */
+.bang-vi {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.bang-vi th,
+.bang-vi td {
+    border: 1px solid #ddd;
+    padding: 15px;
+    text-align: left;
+}
+
+.bang-vi th {
+    background-color: #f8f9fa;
+    color: #444;
+}
+
+/* Tô màu số tiền cho dễ nhìn */
+.so-tien {
+    color: #007bff;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* Nút xóa */
+.nut-xoa {
+    color: #dc3545;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.nut-xoa:hover {
+    text-decoration: underline;
+}
+
+/* Phần thông báo khi không có dữ liệu */
+.trong-tron {
+    text-align: center;
+    color: #777;
+    font-style: italic;
+}

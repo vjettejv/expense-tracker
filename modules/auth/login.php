@@ -69,142 +69,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng nhập | Expense Tracker</title>
+    <link rel="stylesheet" href="../../assets/css/login.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Barlow:wght@600&display=swap" rel="stylesheet">
 </head>
-
-<style>
-    * {
-        box-sizing: border-box;
-        padding: 0;
-        margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-
-    body {
-        background-color: #fafafa;
-    }
-
-    #main {
-        margin: 48px auto;
-        display: flex;
-        width: 350px;
-        align-items: center;
-        flex-direction: column;
-        border: 1px solid #dbdbdb;
-        background-color: white;
-        padding-bottom: 30px;
-    }
-
-    #logo {
-        margin: 36px 0 12px 0;
-    }
-
-    .imgLogo {
-        width: 175px;
-        height: auto;
-    }
-
-    .form-col {
-        margin-top: 24px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .form-control {
-        margin-bottom: 6px;
-        padding: 9px 0 7px 8px;
-        width: 268px;
-        height: 38px;
-        font-size: 12px;
-        border: 1px solid #dbdbdb;
-        border-radius: 3px;
-        background-color: #fafafa;
-    }
-
-    .form-control:focus {
-        border: 1px solid #a8a8a8;
-        outline: none;
-    }
-
-    .btn-submit {
-        margin: 15px 0;
-        width: 268px;
-        height: 32px;
-        border-radius: 4px;
-        border: none;
-        background-color: #0095f6;
-        font-size: 14px;
-        color: #ffff;
-        font-weight: 600;
-        cursor: pointer;
-    }
-
-    .btn-submit:hover {
-        background-color: #1877f2;
-    }
-
-    #toast-container {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        display: flex;
-        flex-direction: column-reverse;
-        gap: 10px;
-        z-index: 1000;
-    }
-
-    .noti {
-        min-width: 250px;
-        padding: 15px 20px;
-        border-radius: 4px;
-        color: white;
-        font-weight: bold;
-        font-size: 14px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        animation: slideInRight 0.3s ease forwards;
-    }
-
-    .fadeOut {
-        animation: fadeOutRight 0.5s ease forwards;
-    }
-
-    @keyframes slideInRight {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-
-    @keyframes fadeOutRight {
-        to {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-    }
-
-    .register-link {
-        margin-top: 15px;
-        font-size: 14px;
-        color: #262626;
-    }
-
-    .register-link a {
-        color: #0095f6;
-        text-decoration: none;
-        font-weight: 600;
-    }
-</style>
-
 <body>
     <div id="main">
+        <!-- LOGO MỚI Ở ĐÂY -->
         <div id="logo">
-            <img class="imgLogo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Instagram_logo.svg/1280px-Instagram_logo.svg.png" alt="Logo">
+            <a href="../../index.php" class="logo-text">ExpenseTracker</a>
         </div>
+        
         <div id="loginFrom">
             <form id="formmain" method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
                 <div class="form-col">

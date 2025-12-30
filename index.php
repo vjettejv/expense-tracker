@@ -3,60 +3,64 @@ session_start();
 require_once 'config/db.php';
 
 // =========================================================================
-// PHẦN 1: ĐÃ ĐĂNG NHẬP -> HIỆN DASHBOARD (Tiếng Việt + Flexbox)
+// PHẦN 1: ĐÃ ĐĂNG NHẬP -> HIỆN DASHBOARD + BIỂU ĐỒ
 // =========================================================================
 if (isset($_SESSION['user_id'])) {
 
     include 'includes/header.php';
 
     $user_id = $_SESSION['user_id'];
+
+    // 1. Lấy tổng số dư
     $sql_balance = "SELECT SUM(balance) as total FROM wallets WHERE user_id = $user_id";
     $result = $conn->query($sql_balance);
-    $row = $result->fetch_assoc();
-    $total_balance = $row['total'] ? $row['total'] : 0;
+    $total_balance = $result->fetch_assoc()['total'] ?? 0;
+
+    // 2. Tính thu/chi tháng này
+    $sql_income = "SELECT SUM(amount) as total FROM transactions t JOIN categories c ON t.category_id = c.id WHERE t.user_id = $user_id AND c.type = 'income' AND MONTH(transaction_date) = MONTH(CURRENT_DATE())";
+    $income = $conn->query($sql_income)->fetch_assoc()['total'] ?? 0;
+
+    $sql_expense = "SELECT SUM(amount) as total FROM transactions t JOIN categories c ON t.category_id = c.id WHERE t.user_id = $user_id AND c.type = 'expense' AND MONTH(transaction_date) = MONTH(CURRENT_DATE())";
+    $expense = $conn->query($sql_expense)->fetch_assoc()['total'] ?? 0;
+
+    // 3. LẤY DỮ LIỆU VẼ BIỂU ĐỒ (Chỉ lấy các khoản CHI trong tháng này)
+    // Cần lấy: Tên danh mục, Tổng tiền, Mã màu
+    $sql_chart = "SELECT c.name, SUM(t.amount) as total, c.color 
+                  FROM transactions t 
+                  JOIN categories c ON t.category_id = c.id 
+                  WHERE t.user_id = $user_id 
+                  AND c.type = 'expense' 
+                  AND MONTH(t.transaction_date) = MONTH(CURRENT_DATE())
+                  GROUP BY c.id";
+    $result_chart = $conn->query($sql_chart);
+
+    $labels = [];
+    $data = [];
+    $colors = [];
+
+    if ($result_chart->num_rows > 0) {
+        while ($row = $result_chart->fetch_assoc()) {
+            $labels[] = $row['name'];
+            $data[] = $row['total'];
+            // Nếu danh mục chưa có màu, dùng màu mặc định xám
+            $colors[] = !empty($row['color']) ? $row['color'] : '#cccccc';
+        }
+    } else {
+        // Nếu chưa có dữ liệu chi tiêu thì tạo dữ liệu giả để hiện biểu đồ trống cho đẹp
+        $labels = ['Chưa có chi tiêu'];
+        $data = [1];
+        $colors = ['#e0e0e0'];
+    }
 ?>
-    <style>
-        .dashboard-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #dbdbdb;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-
-            flex: 1;
-            min-width: 250px;
-        }
-
-        .card h3 {
-            font-size: 14px;
-            color: #8e8e8e;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-        }
-
-        .card .money {
-            font-size: 24px;
-            font-weight: bold;
-            color: #262626;
-        }
-
-        .welcome-text {
-            margin-bottom: 20px;
-        }
-    </style>
-
+    <!-- Thêm thư viện Chart.js từ CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="./assets/css/style.css">
     <div class="welcome-text">
         <h2>Xin chào, <?php echo $_SESSION['full_name']; ?>! 👋</h2>
-        <p style="color: #8e8e8e;">Tình hình tài chính hiện tại của bạn:</p>
+        <p style="color: #8e8e8e;">Tổng quan tài chính tháng <?php echo date('m/Y'); ?>:</p>
     </div>
 
+    <!-- 3 Ô Thống Kê -->
     <div class="dashboard-container">
         <div class="card">
             <h3>Tổng tài sản hiện có</h3>
@@ -67,30 +71,93 @@ if (isset($_SESSION['user_id'])) {
         </div>
         <div class="card">
             <h3>Thu nhập tháng này</h3>
-            <div class="money" style="color: #2ecc71;">+ 0 đ</div>
-            <small>Chưa có dữ liệu</small>
+            <div class="money" style="color: #2ecc71;">+<?php echo number_format($income); ?> đ</div>
         </div>
         <div class="card">
             <h3>Đã chi tiêu tháng này</h3>
-            <div class="money" style="color: #ed4956;">- 0 đ</div>
-            <small>Chưa có dữ liệu</small>
+            <div class="money" style="color: #ed4956;">-<?php echo number_format($expense); ?> đ</div>
         </div>
+    </div>
+
+    <!-- PHẦN BIỂU ĐỒ MỚI -->
+    <div class="chart-section">
+
+        <!-- Cột 1: Biểu đồ tròn -->
+        <div class="chart-box">
+            <h3 style="margin-bottom: 20px; color: #555;">Cơ cấu chi tiêu tháng này</h3>
+            <div class="chart-container">
+                <canvas id="expenseChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Cột 2: Chi tiết danh sách -->
+        <div class="chart-box">
+            <h3 style="margin-bottom: 20px; color: #555;">Chi tiết theo danh mục</h3>
+            <div class="chart-legend">
+                <?php if ($result_chart->num_rows > 0):
+                    // Reset con trỏ dữ liệu về đầu để lặp lại
+                    $result_chart->data_seek(0);
+                    while ($row = $result_chart->fetch_assoc()):
+                ?>
+                        <div class="legend-item">
+                            <span style="display: flex; align-items: center;">
+                                <span style="display:block; width:12px; height:12px; background-color: <?php echo $row['color']; ?>; margin-right:10px; border-radius:50%;"></span>
+                                <?php echo $row['name']; ?>
+                            </span>
+                            <span style="font-weight: bold;"><?php echo number_format($row['total']); ?> đ</span>
+                        </div>
+                    <?php endwhile;
+                else: ?>
+                    <p style="text-align: center; color: #999;">Chưa có dữ liệu chi tiêu tháng này.</p>
+                <?php endif; ?>
+            </div>
+        </div>
+
     </div>
 
     <div class="card">
         <h3>Thao tác nhanh</h3>
         <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
-            <a href="modules/transactions/create.php" style="background: #0095f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">+ Thêm Giao dịch</a>
+            <a href="modules/transactions/user_add.php" style="background: #0095f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">+ Thêm Giao dịch</a>
             <a href="modules/wallets/create.php" style="background: #efefef; color: #262626; padding: 10px 20px; text-decoration: none; border-radius: 4px;">+ Tạo Ví mới</a>
+            <a href="modules/transactions/user_history.php" style="background: #efefef; color: #262626; padding: 10px 20px; text-decoration: none; border-radius: 4px;">📜 Xem Lịch sử</a>
         </div>
     </div>
+
+    <!-- Script Vẽ Biểu Đồ -->
+    <script>
+        const ctx = document.getElementById('expenseChart').getContext('2d');
+
+        // Dữ liệu từ PHP chuyển sang Javascript
+        const chartData = {
+            labels: <?php echo json_encode($labels); ?>,
+            datasets: [{
+                data: <?php echo json_encode($data); ?>,
+                backgroundColor: <?php echo json_encode($colors); ?>,
+                borderWidth: 0
+            }]
+        };
+
+        new Chart(ctx, {
+            type: 'doughnut', // Loại biểu đồ vành khuyên (tròn rỗng giữa) nhìn đẹp hơn pie
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false // Ẩn chú thích mặc định của Chartjs để dùng chú thích HTML bên cạnh
+                    }
+                }
+            }
+        });
+    </script>
 
 <?php
     include 'includes/footer.php';
     exit(); // Dừng code tại đây nếu đã đăng nhập
 }
 ?>
-
 <!-- ========================================================================= -->
 <!-- PHẦN 2: CHƯA ĐĂNG NHẬP -> HIỆN TRANG GIỚI THIỆU (Tiếng Việt) -->
 <!-- ========================================================================= -->
@@ -100,338 +167,137 @@ if (isset($_SESSION['user_id'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trang giới thiệu Expense Tracker</title>
-
-    <!-- Fonts -->
+    <link rel="icon" type="image/png" sizes="32x32" href="./images/favicon-32x32.png">
+    <title>Quản lý tài chính - Nhóm phát triển</title>
+    <link rel="stylesheet" href="./assets/css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Barlow:wght@600&display=swap" rel="stylesheet">
-
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Barlow', sans-serif;
-        }
-
-        #header {
-            background-color: #3ebfff;
-            /* Màu xanh da trời */
-            /* background: url(./assets/images/header-bg.jpg) top center / cover no-repeat; */
-            padding: 30px 40px 100px 40px;
-            text-align: center;
-            position: relative;
-        }
-
-        .nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 80px;
-        }
-
-        .logo-text {
-            font-family: 'Fraunces', serif;
-            font-weight: 900;
-            color: white;
-            font-size: 24px;
-            text-decoration: none;
-        }
-
-        .menu {
-            list-style: none;
-            display: flex;
-            gap: 30px;
-            align-items: center;
-        }
-
-        .menu a {
-            text-decoration: none;
-            color: white;
-            font-size: 16px;
-        }
-
-        .btn-login {
-            background: white;
-            color: #3ebfff;
-            padding: 12px 25px;
-            border-radius: 30px;
-            font-family: 'Fraunces', serif;
-            text-transform: uppercase;
-            font-weight: 700;
-            transition: 0.3s;
-        }
-
-        .btn-login:hover {
-            background: rgba(255, 255, 255, 0.3);
-            color: white;
-        }
-
-        /* Intro Text */
-        .intro-text h1 {
-            font-family: 'Fraunces', serif;
-            font-size: 48px;
-            text-transform: uppercase;
-            color: white;
-            letter-spacing: 5px;
-            margin-bottom: 50px;
-        }
-
-        /* Content Grid */
-        #content {
-            display: flex;
-            flex-wrap: wrap;
-        }
-
-        .half-box {
-            width: 50%;
-            min-height: 400px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Text Box */
-        .text-box {
-            padding: 50px 80px;
-            text-align: left;
-        }
-
-        .text-box h3 {
-            font-family: 'Fraunces', serif;
-            font-size: 32px;
-            color: #23303e;
-            margin-bottom: 20px;
-        }
-
-        .text-box p {
-            color: #818498;
-            line-height: 1.6;
-            margin-bottom: 30px;
-        }
-
-        .learn-more {
-            font-family: 'Fraunces', serif;
-            text-transform: uppercase;
-            text-decoration: none;
-            color: #23303e;
-            font-weight: 900;
-            border-bottom: 5px solid #fad400;
-        }
-
-        .img-box {
-            width: 50%;
-            min-height: 400px;
-        }
-
-        .img-box img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .service-box {
-            width: 50%;
-            height: 400px;
-            position: relative;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            padding-bottom: 50px;
-            background-size: cover;
-            background-position: center;
-        }
-
-        .service-green {
-            background-color: #90d4c5;
-            color: #25564b;
-        }
-
-        .service-orange {
-            background-color: #ffbc66;
-            color: #19536b;
-        }
-
-        .service-box h4 {
-            font-family: 'Fraunces', serif;
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-
-        .service-box p {
-            font-size: 14px;
-            max-width: 300px;
-            margin: 0 auto;
-            line-height: 1.5;
-        }
-
-        /* Testimonials */
-        .testimonials {
-            padding: 100px 20px;
-            text-align: center;
-            background: #fffaf0;
-        }
-
-        .testimonials h4 {
-            font-family: 'Fraunces', serif;
-            text-transform: uppercase;
-            color: #a7aaad;
-            letter-spacing: 4px;
-            margin-bottom: 60px;
-        }
-
-        .testi-grid {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-        }
-
-        .testi-item {
-            width: 300px;
-        }
-
-        .avatar {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            background: #ccc;
-            margin: 0 auto 30px;
-        }
-
-        .testi-name {
-            font-family: 'Fraunces', serif;
-            font-weight: 900;
-            margin-top: 20px;
-            color: #23303e;
-        }
-
-        /* Footer */
-        .footer {
-            background: #90d4c5;
-            padding: 50px;
-            text-align: center;
-            color: #2c7566;
-            font-weight: 600;
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-
-            .half-box,
-            .img-box,
-            .service-box {
-                width: 100%;
-            }
-
-            #header {
-                padding: 20px;
-            }
-
-            .intro-text h1 {
-                font-size: 36px;
-            }
-
-            .menu {
-                display: none;
-            }
-
-            .testi-grid {
-                flex-direction: column;
-                align-items: center;
-            }
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,700,100,1;1,9..144,700,100,1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@600&display=swap" rel="stylesheet">
 </head>
 
 <body>
     <div id="main">
-
         <div id="header">
-            <div class="nav">
-                <a href="#" class="logo-text">ExpenseTracker</a>
-                <ul class="menu">
-                    <li><a href="#">Giới thiệu</a></li>
-                    <li><a href="#">Tính năng</a></li>
-                    <li><a href="modules/auth/login.php" class="btn-login">Đăng nhập</a></li>
-                </ul>
+            <div id="nav">
+                <div class="nav logo">
+                    <div class="img-logo">
+                        <a href="#" class="logo-text">ExpenseTracker</a>
+                    </div>
+                    <ul class="nav menu">
+                        <li class="nav-item-1"><a href=".intro">Giới thiệu</a></li>
+                        <li class="nav-item-2"><a href="#content">Tính năng</a></li>
+                        <li class="nav-item-3"><a href="#team-section">Nhóm</a></li>
+                        <li class="nav-item-4"><a href="modules/auth/login.php">Login</a></li>
+                    </ul>
+                </div>
             </div>
-
-            <div class="intro-text">
-                <h1>Quản lý tài chính<br>Thông minh & Hiệu quả</h1>
+            <div class="intro">
+                <div class="intro-text">Quản lý tài chính</div>
             </div>
         </div>
 
         <div id="content">
-
-            <div class="half-box text-box">
-                <div>
+            <div class="content item-1">
+                <div class="text-1">
                     <h3>Kiểm soát dòng tiền</h3>
-                    <p>Chúng tôi cung cấp công cụ giúp bạn ghi chép thu chi hàng ngày một cách nhanh chóng.
-                        Giúp bạn biết chính xác tiền của mình đi đâu về đâu.</p>
-                    <a href="modules/auth/register.php" class="learn-more">Đăng ký ngay</a>
-                </div>
-            </div>
-            <div class="img-box">
-                <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=800" alt="Finance">
-            </div>
-
-            <div class="img-box">
-                <img src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&q=80&w=800" alt="Saving">
-            </div>
-            <div class="half-box text-box">
-                <div>
-                    <h3>Tiết kiệm cho tương lai</h3>
-                    <p>Đặt hạn mức chi tiêu cho từng danh mục (Ăn uống, Mua sắm...).
-                        Hệ thống sẽ cảnh báo khi bạn tiêu quá tay.</p>
-                    <a href="#" class="learn-more">Xem chi tiết</a>
+                    <p>Ghi chép thu chi hàng ngày một cách nhanh chóng. Giúp bạn phân loại các khoản chi tiêu để biết chính xác tiền của mình đi đâu về đâu.</p>
+                    <h4><a href="modules/auth/login.php" style="text-decoration: none; color: inherit;">Đăng nhập ngay</a></h4>
                 </div>
             </div>
 
-            <!-- Khối 3: Dịch vụ -->
-            <div class="service-box service-green">
-                <h4>Quản lý Ví</h4>
-                <p>Theo dõi số dư Tiền mặt, Thẻ ngân hàng, Ví điện tử tại một nơi duy nhất.</p>
-            </div>
-            <div class="service-box service-orange">
-                <h4>Báo cáo</h4>
-                <p>Biểu đồ trực quan giúp bạn nhìn lại thói quen tiêu dùng trong tháng.</p>
+            <div class="content item-2">
+                <img class="img-content" src="./assets/images/content-1" alt="Finance">
             </div>
 
-        </div>
+            <div class="content item-3">
+                <img class="img-content" src="./assets/images/content-2" alt="Saving">
+            </div>
 
-        <!-- TESTIMONIALS -->
-        <div class="testimonials">
-            <h4>Người dùng nói gì?</h4>
-            <div class="testi-grid">
-                <div class="testi-item">
-                    <img src="https://randomuser.me/api/portraits/women/44.jpg" class="avatar" alt="">
-                    <p>Ứng dụng rất dễ sử dụng, phù hợp với sinh viên như mình để quản lý tiền sinh hoạt phí.</p>
-                    <div class="testi-name">Nguyễn Thùy Linh</div>
-                    <small>Sinh viên KTQD</small>
+            <div class="content item-4">
+                <div class="text-1">
+                    <h3>Tiết kiệm tương lai</h3>
+                    <p>Đặt hạn mức chi tiêu cho từng danh mục (Ăn uống, Mua sắm...). Hệ thống sẽ cảnh báo khi bạn tiêu quá tay để đảm bảo kế hoạch tiết kiệm.</p>
+                    <h4><a href="modules/auth/register.php" style="text-decoration: none; color: inherit;">Đăng ký ngay</a></h4>
                 </div>
-                <div class="testi-item">
-                    <img src="https://randomuser.me/api/portraits/men/32.jpg" class="avatar" alt="">
-                    <p>Giao diện đẹp, đơn giản. Mình thích nhất tính năng báo cáo chi tiêu.</p>
-                    <div class="testi-name">Trần Văn Nam</div>
-                    <small>Nhân viên văn phòng</small>
+            </div>
+
+            <div class="content item-5">
+                <div class="text-2 graphic">
+                    <h4>Đa nền tảng</h4>
+                    <p>Đồng bộ dữ liệu trên mọi thiết bị: Điện thoại, Máy tính bảng và Website.</p>
+                </div>
+            </div>
+
+            <div class="content item-6">
+                <div class="text-2 photography">
+                    <h4>Báo cáo trực quan</h4>
+                    <p>Xem biểu đồ thống kê chi tiết theo tuần, tháng để đưa ra quyết định đúng đắn.</p>
                 </div>
             </div>
         </div>
-
-        <div class="footer">
-            Expense Tracker Project - Nhóm 2
-            <br><br>
-            <a href="modules/auth/login.php" style="color: #25564b;">Đăng nhập</a> |
-            <a href="modules/auth/register.php" style="color: #25564b;">Đăng ký</a>
-        </div>
-
     </div>
+
+    <div id="team-section">
+        <h3>Đội ngũ phát triển</h3>
+
+        <div class="team-container">
+            <div class="team-member">
+                <img src="https://ui-avatars.com/api/?name=Dam+Dinh+Long&background=60c5a8&color=fff&size=128" alt="Long">
+                <div class="member-info">
+                    <h5>Đàm Đình Long</h5>
+                    <h6>Thành viên nhóm</h6>
+                </div>
+            </div>
+
+            <div class="team-member">
+                <img src="https://ui-avatars.com/api/?name=Do+Thi+Thuy+Quynh&background=ffbc66&color=fff&size=128" alt="Quynh">
+                <div class="member-info">
+                    <h5>Đỗ Thị Thuý Quỳnh</h5>
+                    <h6>Thành viên nhóm</h6>
+                </div>
+            </div>
+
+            <div class="team-member leader">
+                <img src="https://ui-avatars.com/api/?name=Nguyen+Ha+Duc+Viet&background=fe7867&color=fff&size=128" alt="Viet">
+                <div class="member-info">
+                    <h5>Nguyễn Hà Đức Việt</h5>
+                    <h6>Trưởng nhóm</h6>
+                </div>
+            </div>
+
+            <div class="team-member">
+                <img src="https://ui-avatars.com/api/?name=Trinh+Dang+Quang&background=60c5a8&color=fff&size=128" alt="Quang">
+                <div class="member-info">
+                    <h5>Trịnh Đăng Quang</h5>
+                    <h6>Thành viên nhóm</h6>
+                </div>
+            </div>
+
+            <div class="team-member">
+                <img src="https://ui-avatars.com/api/?name=Le+Van+Tuan&background=ffbc66&color=fff&size=128" alt="Tuan">
+                <div class="member-info">
+                    <h5>Lê Văn Tuấn</h5>
+                    <h6>Thành viên nhóm</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <a href="#" class="footer-logo">ExpenseTracker</a>
+
+        <div class="footer-nav">
+            <a href="modules/auth/login.php">Đăng nhập</a>
+            <span>|</span>
+            <a href="modules/auth/register.php">Đăng ký</a>
+        </div>
+
+        <div class="footer-copyright">
+            &copy; 2025 Expense Tracker
+        </div>
+    </footer>
+
 </body>
 
 </html>
