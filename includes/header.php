@@ -17,7 +17,7 @@ $base_url = '/expense-tracker';
 
     <nav class="navbar">
         <div class="logo">
-            <a href="<?php echo $base_url; ?>/index.php">Expense Tracker</a>
+            <a href="<?php echo $base_url; ?>/admin/dashboard.php">Expense Tracker</a>
         </div>
         
         <div class="nav-links">
@@ -27,7 +27,11 @@ $base_url = '/expense-tracker';
                 <a href="<?php echo $base_url; ?>/modules/categories/index.php">Danh mục</a>
                 <a href="<?php echo $base_url; ?>/modules/wallets/index.php">Ví tiền</a>
                 <a href="<?php echo $base_url; ?>/modules/budgets/index.php">Ngân sách</a>
-                <a href="<?php echo $base_url; ?>/modules/transactions/index.php">Giao dịch</a>
+                <?php if (isset($_SESSION['role']) && $_SESSION['role'] == 'admin'): ?>
+                    <a href="<?php echo $base_url; ?>/admin/admin_report.php">Giao dịch</a>
+                <?php else: ?>
+                    <a href="<?php echo $base_url; ?>/modules/transactions/index.php">Giao dịch</a>
+                <?php endif; ?>
                 
                 <!-- MENU USER -->
                 <span style="border-left: 1px solid #ccc; height: 20px; margin-left: 20px; margin-right: 10px;"></span>
