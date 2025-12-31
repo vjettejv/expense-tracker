@@ -14,7 +14,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (empty($full_name) || empty($username) || empty($email) || empty($password)) {
         $error_msg = "Vui lòng điền đầy đủ thông tin!";
     } else {
-        // Kiểm tra trùng lặp
         $check = $conn->query("SELECT id FROM users WHERE username = '$username' OR email = '$email'");
         if ($check->num_rows > 0) {
             $error_msg = "Tên đăng nhập hoặc Email đã tồn tại!";
@@ -50,7 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <body>
 
     <div id="main">
-        <!-- LOGO MỚI (CHỮ) -->
+        <!-- LOGO (CHỮ) -->
         <div id="logo">
             <a href="../../index.php" class="logo-text">ExpenseTracker</a>
         </div>
@@ -75,7 +74,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </form>
     </div>
 
-    <!-- HỘP LIÊN KẾT ĐĂNG NHẬP RIÊNG -->
     <div class="login-link-box">
         <p class="login-link">Bạn đã có tài khoản? <a href="login.php">Đăng nhập</a></p>
     </div>
