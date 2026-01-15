@@ -137,12 +137,6 @@ include '../../includes/header.php';
             <?php endif; ?>
         </div>
 
-        <div class="history-footer-actions">
-            <a href="user_add.php" class="btn-back-add">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-                Thêm giao dịch mới
-            </a>
-        </div>
     </div>
 </div>
 

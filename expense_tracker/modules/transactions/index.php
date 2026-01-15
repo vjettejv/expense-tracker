@@ -1,4 +1,4 @@
 <?php
-header("Location: user_history.php");
+header("Location: user_add.php");
 exit();
 ?>

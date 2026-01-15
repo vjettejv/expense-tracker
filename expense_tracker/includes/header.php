@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$base_url = '/expense-tracker'; 
+$base_url = BASE_URL; 
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -11,7 +11,7 @@ $base_url = '/expense-tracker';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý Chi tiêu</title>
-    <link rel="stylesheet" href="/expense-tracker/assets/css/header.css">
+    <link rel="stylesheet" href="<?php echo $base_url; ?>/assets/css/header.css">
 </head>
 <body>
 
@@ -30,7 +30,13 @@ $base_url = '/expense-tracker';
                 <?php if (isset($_SESSION['role']) && $_SESSION['role'] == 'admin'): ?>
                     <a href="<?php echo $base_url; ?>/admin/admin_report.php">Giao dịch</a>
                 <?php else: ?>
-                    <a href="<?php echo $base_url; ?>/modules/transactions/index.php">Giao dịch</a>
+                    <div class="nav-dropdown">
+                        <a href="<?php echo $base_url; ?>/modules/transactions/index.php" class="dropdown-toggle">Giao dịch &#9662;</a>
+                        <div class="dropdown-menu">
+                            <a href="<?php echo $base_url; ?>/modules/transactions/user_add.php">+ Thêm Giao dịch</a>
+                            <a href="<?php echo $base_url; ?>/modules/transactions/user_history.php">📜 Lịch sử Giao dịch</a>
+                        </div>
+                    </div>
                 <?php endif; ?>
                 
                 <!-- MENU USER -->

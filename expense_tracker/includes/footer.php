@@ -1,5 +1,5 @@
 </div>
-    <link rel="stylesheet" href="/expense-tracker/assets/css/footer.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/footer.css">
     <footer class="footer">
         <p>
             &copy; <?php echo date("Y"); ?> <b>Expense Tracker</b>. 

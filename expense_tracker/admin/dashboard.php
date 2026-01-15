@@ -71,7 +71,6 @@ include '../includes/header.php';
     <div class="admin-actions">
         <a href="users.php" class="btn-admin bg-blue">👥 Quản lý Thành viên</a>
         <a href="admin_report.php" class="btn-admin bg-green">📊 Báo cáo Giao dịch</a>
-        <a href="../index.php" class="btn-admin bg-blue">Chi tiêu</a>
     </div>
 </div>
 

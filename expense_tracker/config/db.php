@@ -17,7 +17,7 @@ if (!$conn->set_charset("utf8mb4")) {
 }
 
 
-define('BASE_URL', 'http://localhost/expense-tracker');
+define('BASE_URL', 'http://localhost/expense-tracker/expense_tracker');
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

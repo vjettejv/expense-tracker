@@ -120,7 +120,6 @@ if (isset($_SESSION['user_id'])) {
         <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
             <a href="modules/transactions/user_add.php" style="background: #0095f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">+ Thêm Giao dịch</a>
             <a href="modules/wallets/create.php" style="background: #efefef; color: #262626; padding: 10px 20px; text-decoration: none; border-radius: 4px;">+ Tạo Ví mới</a>
-            <a href="modules/transactions/user_history.php" style="background: #efefef; color: #262626; padding: 10px 20px; text-decoration: none; border-radius: 4px;">📜 Xem Lịch sử</a>
         </div>
     </div>
 

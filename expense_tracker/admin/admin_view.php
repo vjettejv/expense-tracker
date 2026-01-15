@@ -2,11 +2,10 @@
 session_start();
 include '../config/db.php';
 
-// Kiểm tra quyền admin (nếu cần thiết, dựa trên logic các file khác)
+// Kiểm tra quyền admin
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-    // Nếu không phải admin, có thể chuyển hướng hoặc báo lỗi
-    // header("Location: ../../index.php");
-    // exit();
+    header("Location: ../auth/login.php"); // Chuyển về trang đăng nhập
+    exit();
 }
 
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -51,22 +50,14 @@ if (!$data) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chi tiết Giao dịch #<?php echo $id; ?></title>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; padding-top: 50px; }
-        .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 500px; }
-        h2 { text-align: center; color: #333; border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; margin-bottom: 20px; }
-        .row { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px dashed #eee; padding-bottom: 5px; }
-        .label { font-weight: bold; color: #555; }
-        .value { color: #333; }
-        .income { color: #2ecc71; font-weight: bold; }
-        .expense { color: #e74c3c; font-weight: bold; }
-        .btn-back { display: block; width: 100%; text-align: center; background: #6c757d; color: white; padding: 10px 0; text-decoration: none; border-radius: 4px; margin-top: 20px; }
-        .btn-back:hover { background: #5a6268; }
-    </style>
+    <link rel="stylesheet" href="../assets/css/admin_view.css">
+    <!-- Thư viện để tạo PDF từ HTML -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
-<div class="card">
+<div class="view-card">
     <h2>Chi tiết Giao dịch #<?php echo $data['id']; ?></h2>
 
     <div class="row">
@@ -101,8 +92,50 @@ if (!$data) {
         <span class="value"><?php echo htmlspecialchars($data['wallet_name']); ?></span>
     </div>
 
-    <a href="admin_report.php" class="btn-back">← Quay lại danh sách</a>
+    <div class="btn-group">
+        <button onclick="downloadPDF()" class="btn btn-download">📄 Tải về PDF</button>
+        <a href="admin_report.php" class="btn btn-back">← Quay lại</a>
+    </div>
 </div>
 
+<script>
+    function downloadPDF() {
+        const cardElement = document.querySelector('.view-card');
+        const transactionId = "<?php echo $data['id']; ?>";
+        const fileName = `chi-tiet-giao-dich-${transactionId}.pdf`;
+
+        // Tạm thời ẩn nút bấm để không xuất hiện trong file PDF
+        cardElement.querySelector('.btn-group').style.display = 'none';
+
+        html2canvas(cardElement, {
+            scale: 2, // Tăng độ phân giải cho ảnh chụp
+            useCORS: true
+        }).then(canvas => {
+            // Hiện lại nút bấm sau khi đã chụp ảnh
+            cardElement.querySelector('.btn-group').style.display = 'flex';
+
+            const imgData = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+
+            // Khởi tạo file PDF khổ A4
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            const ratio = canvasWidth / canvasHeight;
+
+            const imgWidth = pdfWidth - 20; // Chiều rộng ảnh trong PDF, trừ 10mm lề mỗi bên
+            const imgHeight = imgWidth / ratio;
+
+            pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight); // Thêm ảnh vào PDF với lề 10mm
+            pdf.save(fileName);
+        });
+    }
+</script>
 </body>
 </html>

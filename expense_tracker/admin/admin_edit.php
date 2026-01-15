@@ -77,7 +77,6 @@ $categories = $conn->query("SELECT * FROM categories ORDER BY type, name");
 </head>
 <body>
     <div class="container">
-        <a href="admin_report.php" style="text-decoration: none; color: #333; font-weight: bold; display: inline-block; margin-bottom: 15px;">← Quay lại </a>
         <h2>Sửa Giao Dịch #<?php echo $id; ?></h2>
         
         <?php if (!empty($message)): ?>

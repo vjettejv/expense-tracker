@@ -1,21 +1,14 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Báo cáo Quản trị (Admin)</title>
-    <link rel="stylesheet" href="../assets/css/admin_report.css">
-</head>
-<body>
-    <div class="container">
-    <a href="dashboard.php" style="text-decoration: none; color: #333; font-weight: bold; display: inline-block; margin-bottom: 15px;">← Quay lại </a>
-    <h1>Báo cáo Tổng hợp theo Tháng (Admin)</h1>
+<?php
+session_start();
+include '../config/db.php';
+include '../includes/header.php';
+?>
 
-    <?php
-    include '../config/db.php';
+<link rel="stylesheet" href="../assets/css/admin_report.css">
 
-    // --- XỬ LÝ XÓA GIAO DỊCH VÀ CẬP NHẬT VÍ ---
-    function deleteTransaction($conn, $id) {
+<h1>Báo cáo Tổng hợp</h1>
+<?php // --- XỬ LÝ XÓA GIAO DỊCH VÀ CẬP NHẬT VÍ ---
+        function deleteTransaction($conn, $id) {
         // 1. Lấy thông tin giao dịch cũ
         $sql = "SELECT wallet_id, amount, category_id FROM transactions WHERE id = ?";
         $stmt = $conn->prepare($sql);
@@ -157,81 +150,67 @@
     $result = $conn->query($sql);
     ?>
 
-    <?php if ($result && $result->num_rows > 0): ?>
-        <form method="POST" action="" onsubmit="return confirm('Bạn có chắc chắn muốn xóa các mục đã chọn?');">
-            <div style="text-align: right; margin-bottom: 10px;">
-                <button type="button" onclick="window.location.href='admin_report.php'" class="btn-reload">🔄 Tải lại</button>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th class="delete-col">Chọn</th>
-                        <th><?php echo $timeHeader; ?></th>
-                        <th>Người dùng</th>
-                        <th>Danh mục</th>
-                        <th>Số Tiền</th>
-                        <th>Hành động</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while ($row = $result->fetch_assoc()): ?>
+        <?php if ($result && $result->num_rows > 0): ?>
+            <form method="POST" action="" onsubmit="return confirm('Bạn có chắc chắn muốn xóa các mục đã chọn?');">
+                <div class="table-header-actions">
+                    <span>Tổng cộng: <strong><?php echo $result->num_rows; ?></strong> giao dịch</span>
+                    <button type="button" onclick="window.location.href='admin_report.php'" class="btn-reload">🔄 Tải lại</button>
+                </div>
+                <table>
+                    <thead>
                         <tr>
-                            <td class="delete-col">
-                                <input type="checkbox" name="items[]" value="<?php echo $row['id']; ?>">
-                            </td>
-                            <td><?php echo $row['time_period']; ?></td>
-                            <td><?php echo htmlspecialchars($row['full_name']); ?></td>
-                            <td><?php echo htmlspecialchars($row['category_name']); ?></td>
-                            <td><?php echo number_format($row['total'], 0, ',', '.'); ?> VNĐ</td>
-                            <td>
-                                <a href="admin_view.php?id=<?php echo $row['id']; ?>" class="action-link" style="margin-right: 5px; text-decoration: none;">👁️ Xem</a>
-                                <a href="admin_edit.php?id=<?php echo $row['id']; ?>" class="action-link">✏️ Sửa</a>
-                            </td>
+                            <th class="delete-col">Chọn</th>
+                            <th><?php echo $timeHeader; ?></th>
+                            <th>Người dùng</th>
+                            <th>Danh mục</th>
+                            <th>Số Tiền</th>
+                            <th>Hành động</th>
                         </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-            
-            <!-- Nút bật chế độ xóa (Hiện khi chưa chọn xóa) -->
-            <div id="start-delete-btn" style="margin-top: 15px; text-align: right;">
-                <button type="button" onclick="toggleDeleteMode()" class="btn-secondary">🗑️ Chọn để xóa</button>
-            </div>
+                    </thead>
+                    <tbody>
+                        <?php while ($row = $result->fetch_assoc()): ?>
+                            <tr>
+                                <td class="delete-col">
+                                    <input type="checkbox" name="items[]" value="<?php echo $row['id']; ?>">
+                                </td>
+                                <td><?php echo $row['time_period']; ?></td>
+                                <td><?php echo htmlspecialchars($row['full_name']); ?></td>
+                                <td><?php echo htmlspecialchars($row['category_name']); ?></td>
+                                <td><?php echo number_format($row['total'], 0, ',', '.'); ?> VNĐ</td>
+                                <td>
+                                    <a href="admin_view.php?id=<?php echo $row['id']; ?>" class="action-link" style="margin-right: 5px; text-decoration: none;">👁️ Xem</a>
+                                    <a href="admin_edit.php?id=<?php echo $row['id']; ?>" class="action-link">✏️ Sửa</a>
+                                </td>
+                            </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+                
+                <div class="table-actions">
+                    <div class="confirm-delete-container">
+                        <button type="submit" name="delete_items" class="btn-danger">Xác nhận xóa mục đã chọn</button>
+                        <button type="button" onclick="toggleDeleteMode()" class="btn-secondary">Hủy</button>
+                    </div>
+                    <div class="start-delete-container">
+                        <button type="button" onclick="toggleDeleteMode()" class="btn-secondary">🗑️ Chọn để xóa</button>
+                    </div>
+                </div>
+            </form>
+        <?php else: ?>
+            <p style="text-align: center; color: #8e8e8e; margin: 40px 0;">Chưa có dữ liệu báo cáo.</p>
+        <?php endif; ?>
 
-            <!-- Nút xác nhận xóa (Hiện khi đang chọn xóa) -->
-            <div id="confirm-delete-actions" style="margin-top: 15px; text-align: left; display: none;">
-                <button type="submit" name="delete_items" class="btn-danger">Xác nhận xóa mục đã chọn</button>
-                <button type="button" onclick="toggleDeleteMode()" class="btn-secondary" style="margin-left: 10px;">Hủy</button>
-            </div>
-        </form>
-    <?php else: ?>
-        <p style="text-align: center; color: #8e8e8e; margin: 40px 0;">Chưa có dữ liệu báo cáo.</p>
-    <?php endif; ?>
+        <!-- Nút Reset dữ liệu nguy hiểm, chỉ dành cho Admin -->
+        <div class="reset-container">
+            <a href="?reset=1" onclick="return confirm('CẢNH BÁO NGUY HIỂM:\nBạn có chắc chắn muốn xóa TOÀN BỘ dữ liệu giao dịch trong hệ thống?\nHành động này KHÔNG THỂ hoàn tác!');">
+                <button type="button" class="btn-danger" style="font-weight: bold;">⚠️ Xóa tất cả dữ liệu (Reset Database)</button>
+            </a>
+        </div>
 
-    <!-- Nút Reset dữ liệu nguy hiểm, chỉ dành cho Admin -->
-    <p style="margin-top: 30px; text-align: right; border-top: 1px solid #dbdbdb; padding-top: 20px;"><a href="?reset=1" onclick="return confirm('CẢNH BÁO NGUY HIỂM:\nBạn có chắc chắn muốn xóa TOÀN BỘ dữ liệu giao dịch trong hệ thống?\nHành động này KHÔNG THỂ hoàn tác!');"><button type="button" class="btn-danger" style="font-weight: bold;">⚠️ Xóa tất cả dữ liệu (Reset Database)</button></a></p>
-
-    <script>
-        function toggleDeleteMode() {
-            var cols = document.getElementsByClassName('delete-col');
-            var startBtn = document.getElementById('start-delete-btn');
-            var confirmActions = document.getElementById('confirm-delete-actions');
-            var targetVisibility = 'visible';
-
-            // Kiểm tra trạng thái hiện tại của cột đầu tiên để đảo ngược
-            if (cols.length > 0 && cols[0].style.visibility === 'visible') {
-                targetVisibility = 'hidden';
+        <script>
+            function toggleDeleteMode() {
+                document.body.classList.toggle('delete-mode-active');
             }
+        </script>
 
-            for (var i = 0; i < cols.length; i++) {
-                cols[i].style.visibility = targetVisibility;
-            }
-
-            if (startBtn && confirmActions) {
-                startBtn.style.display = (targetVisibility === 'visible') ? 'none' : 'block';
-                confirmActions.style.display = (targetVisibility === 'visible') ? 'block' : 'none';
-            }
-        }
-    </script>
-    </div>
-</body>
-</html>
+<?php include '../includes/footer.php'; ?>

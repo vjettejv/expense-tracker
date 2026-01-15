@@ -59,21 +59,54 @@ select:focus {
     background: white;
 }
 
-button[type="submit"] {
-    width: 100%;
-    padding: 12px;
+/* Nhóm nút bấm */
+.button-group {
+    display: flex;
+    gap: 10px;
     margin-top: 25px;
-    background: #0095f6;
-    color: white;
-    border: none;
+}
+
+/* Style chung cho các nút trong nhóm */
+.button-group button {
+    margin-top: 0;
+    padding: 12px;
     border-radius: 4px;
     font-weight: 600;
     cursor: pointer;
     font-size: 14px;
+    border: 1px solid transparent; /* Thêm border để không bị nhảy layout khi hover nút QR */
+    transition: background-color 0.2s, border-color 0.2s;
 }
 
-button[type="submit"]:hover {
+/* Style riêng cho nút Lưu */
+.button-group button[type="submit"] {
+    flex-grow: 2; /* Nút chính (Lưu) chiếm 2 phần */
+    background: #0095f6;
+    color: white;
+    border: none; /* Nút chính không cần border */
+}
+
+.button-group button[type="submit"]:hover {
     background: #1877f2;
+}
+
+/* Style riêng cho nút QR */
+.button-group .btn-qr {
+    flex-grow: 1; /* Nút phụ (QR) chiếm 1 phần, trông gọn hơn */
+    background: #f0f2f5;
+    color: #333;
+    border-color: #ddd;
+    line-height: 1.2;
+}
+
+.button-group .btn-qr:hover {
+    background-color: #e4e6e9; /* Đậm hơn một chút khi hover */
+    border-color: #ccc;
+}
+
+/* Xóa bỏ quy tắc cũ này vì nó gây xung đột với flexbox và đã được tích hợp vào .button-group */
+button[type="submit"] {
+    /* Các style đã được chuyển vào .button-group button[type="submit"] */
 }
 
 .btn-secondary {
