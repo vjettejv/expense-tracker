@@ -3,7 +3,7 @@ session_start();
 require_once 'config/db.php';
 
 // =========================================================================
-// PHẦN 1: ĐÃ ĐĂNG NHẬP -> HIỆN DASHBOARD + BIỂU ĐỒ
+// PHẦN 1: ĐÃ ĐĂNG NHẬP
 // =========================================================================
 if (isset($_SESSION['user_id'])) {
 
@@ -46,7 +46,6 @@ if (isset($_SESSION['user_id'])) {
             $colors[] = !empty($row['color']) ? $row['color'] : '#cccccc';
         }
     } else {
-        // Nếu chưa có dữ liệu chi tiêu thì tạo dữ liệu giả để hiện biểu đồ trống cho đẹp
         $labels = ['Chưa có chi tiêu'];
         $data = [1];
         $colors = ['#e0e0e0'];
@@ -128,7 +127,6 @@ if (isset($_SESSION['user_id'])) {
     <script>
         const ctx = document.getElementById('expenseChart').getContext('2d');
 
-        // Dữ liệu từ PHP chuyển sang Javascript
         const chartData = {
             labels: <?php echo json_encode($labels); ?>,
             datasets: [{
@@ -185,7 +183,7 @@ if (isset($_SESSION['user_id'])) {
                         <a href="#" class="logo-text">ExpenseTracker</a>
                     </div>
                     <ul class="nav menu">
-                        <li class="nav-item-1"><a href=".intro">Giới thiệu</a></li>
+                        <li class="nav-item-1"><a href="#">Giới thiệu</a></li>
                         <li class="nav-item-2"><a href="#content">Tính năng</a></li>
                         <li class="nav-item-3"><a href="#team-section">Nhóm</a></li>
                         <li class="nav-item-4"><a href="modules/auth/login.php">Login</a></li>

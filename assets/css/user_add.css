@@ -1,104 +1,122 @@
-/* --- QUAN TRỌNG: Xóa toàn bộ phần 'body { display: flex... }' --- */
-
-.user-add-wrapper {
-    display: flex;
-    justify-content: center;
-    padding: 20px 0;
-}
-
-.container-custom {
-    background-color: #ffffff;
+.form-container {
+    max-width: 600px;
+    margin: 30px auto;
+    background: white;
     padding: 30px;
     border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 500px;
-    /* Độ rộng vừa phải cho form */
-    border: 1px solid #ddd;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border: 1px solid #eee;
 }
 
-.back-link {
-    text-decoration: none;
-    color: #0095f6;
-    font-weight: bold;
-    font-size: 14px;
-    margin-bottom: 20px;
-    display: inline-block;
-}
-
-h1 {
+.form-title {
     text-align: center;
-    font-size: 22px;
-    margin-bottom: 25px;
     color: #333;
+    margin-bottom: 25px;
 }
 
-label {
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-label {
     display: block;
-    margin-top: 15px;
-    font-weight: 600;
-    font-size: 13px;
-    color: #8e8e8e;
     margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
 }
 
-input,
-select {
+.form-control {
     width: 100%;
     padding: 10px;
-    border: 1px solid #dbdbdb;
+    border: 1px solid #ccc;
     border-radius: 4px;
-    background: #fafafa;
-    font-size: 14px;
+    box-sizing: border-box;
 }
 
-input:focus,
-select:focus {
-    border-color: #0095f6;
-    outline: none;
-    background: white;
-}
-
-button[type="submit"] {
+.btn-submit {
     width: 100%;
     padding: 12px;
-    margin-top: 25px;
-    background: #0095f6;
+    background: #28a745;
     color: white;
     border: none;
     border-radius: 4px;
-    font-weight: 600;
+    font-weight: bold;
     cursor: pointer;
-    font-size: 14px;
+    margin-top: 10px;
 }
 
-button[type="submit"]:hover {
-    background: #1877f2;
+.btn-submit:hover {
+    background: #218838;
 }
 
-.btn-secondary {
-    display: block;
-    text-align: center;
+.msg-box {
     padding: 10px;
-    background: #f8f9fa;
-    border: 1px solid #dbdbdb;
-    color: #262626;
     border-radius: 4px;
-    text-decoration: none;
-    font-size: 14px;
-    margin-top: 15px;
+    margin-bottom: 15px;
+    text-align: center;
+    font-weight: bold;
 }
 
 .msg-success {
-    color: #2ecc71;
-    font-weight: bold;
-    text-align: center;
-    margin-bottom: 15px;
+    background: #d4edda;
+    color: #155724;
 }
 
 .msg-error {
-    color: #e74c3c;
-    font-weight: bold;
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Style cho khu vực Upload ảnh */
+.scan-area {
+    background: #e9f7ef;
+    border: 2px dashed #28a745;
+    padding: 15px;
+    border-radius: 8px;
     text-align: center;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.scan-area input[type="file"] {
+    display: none;
+}
+
+.scan-label {
+    cursor: pointer;
+    color: #28a745;
+    font-weight: bold;
+    display: block;
+}
+
+.scan-label:hover {
+    text-decoration: underline;
+}
+
+#scan-status {
+    font-size: 13px;
+    color: #666;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #ccc;
+    border-top-color: #28a745;
+    border-radius: 50%;
+    animation: spin 1s infinite linear;
+    margin-right: 5px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }

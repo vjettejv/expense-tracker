@@ -9,108 +9,195 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// 3. Gọi Header (Header đã chứa <!DOCTYPE html>, <html>, <head>, <body> và thanh điều hướng)
+// 3. Gọi Header
 include '../../includes/header.php';
 ?>
 
-<!-- 4. Nhúng CSS riêng (Đã tách khỏi inline) -->
+<!-- 1. Nhúng thư viện Tesseract.js -->
+<script src='https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js'></script>
+
+<!-- 2. Link CSS -->
 <link rel="stylesheet" href="../../assets/css/user_add.css">
 
-<!-- 5. Nội dung chính: Chỉ viết phần "ruột" của trang -->
-<div class="user-add-wrapper">
-    <div class="container-custom">
-        <a href="../../index.php" class="back-link">← Quay lại Dashboard</a>
-        <h1>Thêm Giao dịch</h1>
+<div class="container">
+    <div class="form-container">
+        <a href="../../index.php" style="text-decoration: none; color: #666; font-weight: bold;">&larr; Quay lại Dashboard</a>
+        <h2 class="form-title">Thêm Giao Dịch</h2>
 
         <?php
-        // Xử lý khi nhấn nút Lưu
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user_id = intval($_SESSION['user_id']);
             $wallet_id = isset($_POST['wallet_id']) ? intval($_POST['wallet_id']) : 0;
             $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
             $amount = isset($_POST['amount']) ? floatval($_POST['amount']) : 0;
-            $transaction_date = isset($_POST['transaction_date']) ? $_POST['transaction_date'] : date('Y-m-d');
+            $transaction_date = $_POST['transaction_date'];
 
-            if ($user_id > 0 && $wallet_id > 0 && $category_id > 0 && $amount > 0) {
-                // Lấy loại danh mục (Thu hay Chi)
-                $sql_type = "SELECT type FROM categories WHERE id = ?";
-                $stmt_type = $conn->prepare($sql_type);
-                $stmt_type->bind_param("i", $category_id);
-                $stmt_type->execute();
-                $row_type = $stmt_type->get_result()->fetch_assoc();
-                $type = $row_type['type'];
-                $stmt_type->close();
+            if ($wallet_id > 0 && $category_id > 0 && $amount > 0) {
+                // Lấy loại danh mục
+                $stmt = $conn->prepare("SELECT type FROM categories WHERE id = ?");
+                $stmt->bind_param("i", $category_id);
+                $stmt->execute();
+                $type = $stmt->get_result()->fetch_assoc()['type'];
+                $stmt->close();
 
-                // Lưu vào bảng transactions
-                $sql = "INSERT INTO transactions (user_id, wallet_id, category_id, amount, transaction_date) VALUES (?, ?, ?, ?, ?)";
-                $stmt = $conn->prepare($sql);
+                // Thêm giao dịch
+                $stmt = $conn->prepare("INSERT INTO transactions (user_id, wallet_id, category_id, amount, transaction_date) VALUES (?, ?, ?, ?, ?)");
                 $stmt->bind_param("iiids", $user_id, $wallet_id, $category_id, $amount, $transaction_date);
-
+                
                 if ($stmt->execute()) {
-                    // Cập nhật số dư trong ví
-                    $update_sql = ($type == 'income') ? 
+                    // Cập nhật ví
+                    $sql_update = ($type == 'income') ? 
                         "UPDATE wallets SET balance = balance + ? WHERE id = ?" : 
                         "UPDATE wallets SET balance = balance - ? WHERE id = ?";
-                    
-                    $stmt_update = $conn->prepare($update_sql);
-                    $stmt_update->bind_param("di", $amount, $wallet_id);
-                    $stmt_update->execute();
-                    $stmt_update->close();
-                    
-                    echo '<p class="msg-success">✅ Thêm giao dịch thành công!</p>';
+                    $stmt_up = $conn->prepare($sql_update);
+                    $stmt_up->bind_param("di", $amount, $wallet_id);
+                    $stmt_up->execute();
+                    $stmt_up->close();
+
+                    echo '<div class="msg-box msg-success">✅ Thêm thành công!</div>';
                 } else {
-                    echo '<p class="msg-error">Lỗi hệ thống: ' . $stmt->error . '</p>';
+                    echo '<div class="msg-box msg-error">Lỗi: ' . $stmt->error . '</div>';
                 }
                 $stmt->close();
             } else {
-                echo '<p class="msg-error">Vui lòng nhập đầy đủ thông tin hợp lệ!</p>';
+                echo '<div class="msg-box msg-error">Vui lòng nhập đầy đủ thông tin!</div>';
             }
         }
 
-        // Lấy dữ liệu cho các ô chọn (Dropdown)
-        $result_cats = $conn->query("SELECT id, name, type FROM categories ORDER BY type, name");
-        $user_id = intval($_SESSION['user_id']);
-        $stmt_wallets = $conn->prepare("SELECT id, name, balance FROM wallets WHERE user_id = ?");
-        $stmt_wallets->bind_param("i", $user_id);
-        $stmt_wallets->execute();
-        $result_wallets = $stmt_wallets->get_result();
+        $wallets = $conn->query("SELECT * FROM wallets WHERE user_id = " . $_SESSION['user_id']);
+        $cats = $conn->query("SELECT * FROM categories ORDER BY type, name");
         ?>
 
-        <form method="post">
-            <label>Ví thanh toán:</label>
-            <select name="wallet_id" required>
-                <option value="">-- Chọn ví --</option>
-                <?php while($wallet = $result_wallets->fetch_assoc()): ?>
-                    <option value="<?= $wallet['id'] ?>">
-                        <?= htmlspecialchars($wallet['name']) ?> (Số dư: <?= number_format($wallet['balance']) ?> đ)
-                    </option>
-                <?php endwhile; ?>
-            </select>
+        <!-- 2. Khu vực Scan ảnh -->
+        <div class="scan-area">
+            <label for="bill_image" class="scan-label">
+                📸 Tải ảnh Giao dịch ngân hàng (Auto-fill)
+            </label>
+            <input type="file" id="bill_image" accept="image/*">
+            <div id="scan-status">Chưa chọn ảnh</div>
+        </div>
 
-            <label>Danh mục:</label>
-            <select name="category_id" required>
-                <option value="">-- Chọn danh mục --</option>
-                <?php while($cat = $result_cats->fetch_assoc()): ?>
-                    <option value="<?= $cat['id'] ?>">
-                        <?= htmlspecialchars($cat['name']) ?> (<?= $cat['type'] == 'income' ? 'Thu' : 'Chi' ?>)
-                    </option>
-                <?php endwhile; ?>
-            </select>
+        <form method="POST">
+            <div class="form-group">
+                <label class="form-label">Chọn Ví:</label>
+                <select name="wallet_id" class="form-control" required>
+                    <option value="">-- Chọn ví --</option>
+                    <?php while($w = $wallets->fetch_assoc()): ?>
+                        <option value="<?php echo $w['id']; ?>">
+                            <?php echo $w['name']; ?> (<?php echo number_format($w['balance']); ?> đ)
+                        </option>
+                    <?php endwhile; ?>
+                </select>
+            </div>
 
-            <label>Số tiền (VNĐ):</label>
-            <input type="number" name="amount" min="1" required placeholder="Nhập số tiền...">
+            <div class="form-group">
+                <label class="form-label">Danh mục:</label>
+                <select name="category_id" class="form-control" required>
+                    <option value="">-- Chọn danh mục --</option>
+                    <?php while($c = $cats->fetch_assoc()): ?>
+                        <option value="<?php echo $c['id']; ?>">
+                            <?php echo $c['name']; ?> (<?php echo ($c['type']=='income' ? 'Thu' : 'Chi'); ?>)
+                        </option>
+                    <?php endwhile; ?>
+                </select>
+            </div>
 
-            <label>Ngày giao dịch:</label>
-            <input type="date" name="transaction_date" value="<?= date('Y-m-d') ?>" required>
+            <div class="form-group">
+                <label class="form-label">Số tiền (VNĐ):</label>
+                <input type="number" id="input_amount" name="amount" class="form-control" min="0" placeholder="0" required>
+                <small style="color: #888;">(Có thể nhập tay hoặc dùng tính năng Scan ảnh ở trên)</small>
+            </div>
 
-            <button type="submit">Lưu Giao Dịch</button>
+            <div class="form-group">
+                <label class="form-label">Ngày giao dịch:</label>
+                <input type="date" name="transaction_date" class="form-control" value="<?php echo date('Y-m-d'); ?>" required>
+            </div>
+
+            <button type="submit" class="btn-submit">Lưu Giao Dịch</button>
         </form>
 
-        <a href="user_history.php" class="btn-secondary">📜 Xem lịch sử giao dịch</a>
+        <a href="user_history.php" class="link-history">📜 Xem lịch sử giao dịch</a>
     </div>
 </div>
 
-<?php 
-// 6. Gọi Footer (Để đóng các thẻ </body>, </html>)
-include '../../includes/footer.php'; 
-?>
+<!-- 3. Script xử lý OCR (Quét ảnh) -->
+<script>
+    const fileInput = document.getElementById('bill_image');
+    const statusText = document.getElementById('scan-status');
+    const amountInput = document.getElementById('input_amount');
+
+    fileInput.addEventListener('change', async () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        statusText.innerHTML = '<div class="loading-spinner"></div> Đang quét ảnh... Vui lòng đợi!';
+        
+        try {
+            // Sử dụng Tesseract để quét (ngôn ngữ: tiếng Việt)
+            const { data: { text } } = await Tesseract.recognize(
+                file,
+                'vie', 
+                { logger: m => console.log(m) }
+            );
+
+            console.log("Văn bản quét được:", text);
+
+            // --- LOGIC MỚI: TÌM SỐ TIỀN CÓ ĐƠN VỊ TIỀN TỆ ---
+            // Tìm các chuỗi số đi kèm với VND, VNĐ, đ, d (không phân biệt hoa thường)
+            // Ví dụ: 100.000 VND, 50,000d, 200.000 VNĐ
+            // Regex: \d{1,3}(?:[.,]\d{3})* -> tìm số có dấu phân cách
+            // \s* -> khoảng trắng tùy ý
+            // (?:VND|VNĐ|đ|d) -> đơn vị tiền tệ
+            
+            // Tìm tất cả các chuỗi khớp với mẫu "Số tiền + Đơn vị"
+            const moneyMatches = text.match(/[\d,.]+\s*(?:VND|VNĐ|đ|d)/gi);
+            
+            let foundAmount = 0;
+
+            if (moneyMatches) {
+                console.log("Các chuỗi tiền tệ tìm thấy:", moneyMatches);
+                
+                // Duyệt qua các chuỗi tìm được để lấy số lớn nhất (thường là số tiền giao dịch)
+                moneyMatches.forEach(str => {
+                    // Loại bỏ chữ cái và ký tự lạ, chỉ giữ lại số
+                    let cleanStr = str.replace(/[^\d]/g, '');
+                    let val = parseInt(cleanStr);
+
+                    // Lọc nhiễu: Số tiền thường > 1000 và không quá dài (tránh nhầm mã giao dịch dài dằng dặc)
+                    if (!isNaN(val) && val > 1000 && cleanStr.length < 15) {
+                        if (val > foundAmount) {
+                            foundAmount = val;
+                        }
+                    }
+                });
+            }
+
+            // Nếu không tìm thấy bằng cách trên (do thiếu chữ VND), thử tìm số đứng sau từ khóa
+            if (foundAmount === 0) {
+                // Tìm số đứng sau chữ "Số tiền", "Giao dịch", "Amount"
+                const keywordMatches = text.match(/(?:Số tiền|Giao dịch|Amount)[:\s]+([\d,.]+)/i);
+                if (keywordMatches && keywordMatches[1]) {
+                    let cleanStr = keywordMatches[1].replace(/[^\d]/g, '');
+                    let val = parseInt(cleanStr);
+                    if (!isNaN(val) && val > 1000) {
+                        foundAmount = val;
+                    }
+                }
+            }
+
+            // Cập nhật giao diện
+            if (foundAmount > 0) {
+                amountInput.value = foundAmount;
+                statusText.innerHTML = '✅ Đã tìm thấy số tiền: <b>' + new Intl.NumberFormat().format(foundAmount) + ' đ</b>';
+            } else {
+                statusText.innerHTML = '⚠️ Không tìm thấy số tiền rõ ràng (Thử ảnh nét hơn hoặc có chữ VND).';
+            }
+
+        } catch (error) {
+            console.error(error);
+            statusText.innerHTML = '❌ Lỗi khi quét ảnh. Thử lại sau.';
+        }
+    });
+</script>
+
+<?php include '../../includes/footer.php'; ?>
