@@ -51,6 +51,8 @@ if (!$data) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chi tiết Giao dịch #<?php echo $id; ?></title>
+    <!-- Nhúng thư viện html2pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; padding-top: 50px; }
         .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 500px; }
@@ -60,8 +62,12 @@ if (!$data) {
         .value { color: #333; }
         .income { color: #2ecc71; font-weight: bold; }
         .expense { color: #e74c3c; font-weight: bold; }
-        .btn-back { display: block; width: 100%; text-align: center; background: #6c757d; color: white; padding: 10px 0; text-decoration: none; border-radius: 4px; margin-top: 20px; }
+        .button-container { display: flex; gap: 10px; margin-top: 30px; }
+        .btn { flex: 1; text-align: center; color: white; padding: 12px 0; text-decoration: none; border-radius: 4px; border: none; cursor: pointer; font-size: 15px; font-family: Arial, sans-serif; }
+        .btn-back { background: #6c757d; }
         .btn-back:hover { background: #5a6268; }
+        .btn-download { background: #007bff; }
+        .btn-download:hover { background: #0056b3; }
     </style>
 </head>
 <body>
@@ -101,8 +107,37 @@ if (!$data) {
         <span class="value"><?php echo htmlspecialchars($data['wallet_name']); ?></span>
     </div>
 
-    <a href="admin_report.php" class="btn-back">← Quay lại danh sách</a>
+    <div class="button-container">
+        <a href="admin_report.php" class="btn btn-back">← Quay lại</a>
+        <button id="download-pdf" class="btn btn-download">Tải PDF</button>
+    </div>
 </div>
+
+<script>
+document.getElementById('download-pdf').addEventListener('click', function () {
+    const element = document.querySelector('.card');
+    const transactionId = <?php echo $data['id']; ?>;
+    const buttonContainer = document.querySelector('.button-container');
+
+    // Tùy chọn cho file PDF
+    const opt = {
+      margin:       15,
+      filename:     `Giao-dich-#${transactionId}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, logging: false },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // Tạm thời ẩn các nút trước khi tạo PDF
+    buttonContainer.style.display = 'none';
+
+    // Tạo và tải file PDF
+    html2pdf().set(opt).from(element).save().then(() => {
+        // Hiện lại các nút sau khi hoàn tất
+        buttonContainer.style.display = 'flex';
+    });
+});
+</script>
 
 </body>
 </html>

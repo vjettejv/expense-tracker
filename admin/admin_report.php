@@ -9,7 +9,7 @@
 <body>
     <div class="container">
     <a href="dashboard.php" style="text-decoration: none; color: #333; font-weight: bold; display: inline-block; margin-bottom: 15px;">← Quay lại </a>
-    <h1>Báo cáo Tổng hợp theo Tháng (Admin)</h1>
+    <h1>Báo cáo Tổng hợp </h1>
 
     <?php
     include '../config/db.php';
