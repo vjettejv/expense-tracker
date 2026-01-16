@@ -1,0 +1,94 @@
+.form-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.form-title {
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.form-desc {
+    color: #666;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+/* Style cho Form */
+.custom-form {
+    background-color: #f9f9f9;
+    padding: 25px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+/* Các nhóm input */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #444;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-control:focus {
+    border-color: #0095f6;
+    outline: none;
+}
+
+/* Input màu sắc đặc biệt hơn chút */
+.input-color {
+    height: 45px;
+    cursor: pointer;
+    padding: 5px;
+}
+
+/* Flexbox cho nút bấm */
+.button-group {
+    display: flex;
+    gap: 15px;
+    /* Khoảng cách giữa 2 nút */
+    margin-top: 25px;
+}
+
+.btn {
+    padding: 10px 25px;
+    border-radius: 4px;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    font-size: 14px;
+    text-align: center;
+}
+
+.btn-save {
+    background-color: #0095f6;
+    color: white;
+    flex: 1;
+    /* Nút Lưu to hơn một chút hoặc bằng nhau */
+}
+
+.btn-save:hover {
+    background-color: #1877f2;
+}
+
+.btn-cancel {
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+.btn-cancel:hover {
+    background-color: #d0d0d0;
+}

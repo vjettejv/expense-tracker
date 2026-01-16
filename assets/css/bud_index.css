@@ -1,0 +1,59 @@
+
+.header-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.page-title {
+    margin: 0;
+    color: #333;
+}
+
+.btn-create {
+    background-color: #ffc107;
+    color: #333;
+    padding: 10px 15px;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.btn-create:hover {
+    background-color: #e0a800;
+}
+
+/* Bảng dữ liệu */
+.budget-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.budget-table th,
+.budget-table td {
+    border: 1px solid #eee;
+    padding: 12px;
+    text-align: left;
+}
+
+.budget-table th {
+    background-color: #f9f9f9;
+    color: #555;
+}
+
+.money-amount {
+    font-weight: bold;
+    color: #d63384;
+    /* Màu hồng tím */
+}
+
+.btn-del {
+    color: #dc3545;
+    font-weight: bold;
+    text-decoration: none;
+}
