@@ -17,43 +17,41 @@ if (isset($_GET['delete_id'])) {
     }
 }
 
+// Xử lý Khóa/Mở khóa User (nếu cần sau này)
+if (isset($_GET['ban_id'])) {
+    $ban_id = intval($_GET['ban_id']);
+    if ($ban_id != $_SESSION['user_id']) {
+        $conn->query("UPDATE users SET status = IF(status='active', 'banned', 'active') WHERE id = $ban_id");
+        header("Location: users.php?msg=status_updated");
+    }
+}
+
 $users = $conn->query("SELECT * FROM users ORDER BY created_at DESC");
 
 include '../includes/header.php';
 ?>
 
-<style>
-    .user-table {
-        width: 100%;
-        border-collapse: collapse;
-        background: white;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-    .user-table th, .user-table td {
-        padding: 15px;
-        text-align: left;
-        border-bottom: 1px solid #eee;
-    }
-    .user-table th { background: #f8f9fa; color: #666; font-size: 13px; }
-    .badge {
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: bold;
-    }
-    .badge-admin { background: #e3f2fd; color: #1976d2; }
-    .badge-user { background: #f5f5f5; color: #616161; }
-    .btn-del { color: #ed4956; text-decoration: none; font-size: 13px; font-weight: bold; }
-</style>
+<!-- Thông báo Toast -->
+<?php if(isset($_GET['msg']) && $_GET['msg'] == 'deleted'): ?>
+    <script>document.addEventListener('DOMContentLoaded', ()=> showToast('Đã xóa người dùng thành công!', 'success'));</script>
+<?php endif; ?>
+<?php if(isset($_GET['msg']) && $_GET['msg'] == 'status_updated'): ?>
+    <script>document.addEventListener('DOMContentLoaded', ()=> showToast('Đã cập nhật trạng thái người dùng!', 'success'));</script>
+<?php endif; ?>
 
-<div class="container">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2>👥 Quản lý người dùng</h2>
-        <a href="dashboard.php" style="text-decoration: none; color: #0095f6;">&larr; Quay lại Dashboard</a>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <div>
+        <h2 style="margin: 0;">Quản lý Người dùng</h2>
+        <p style="color: #64748b; margin-top: 5px;">Danh sách tất cả thành viên trong hệ thống.</p>
     </div>
+    
+    <!-- Bạn có thể thêm nút "Thêm User" ở đây nếu muốn -->
+    <!-- <a href="user_create.php" class="btn btn-primary">Thêm mới</a> -->
+</div>
 
-    <table class="user-table">
+<!-- BẢNG DỮ LIỆU (Đóng khung Card giống admin_report) -->
+<div class="card" style="padding: 0; overflow: hidden;">
+    <table class="custom-table">
         <thead>
             <tr>
                 <th>ID</th>
@@ -61,32 +59,65 @@ include '../includes/header.php';
                 <th>Username</th>
                 <th>Email</th>
                 <th>Vai trò</th>
-                <th>Ngày tạo</th>
+                <th>Trạng thái</th>
+                <th>Ngày tham gia</th>
                 <th>Thao tác</th>
             </tr>
         </thead>
         <tbody>
-            <?php while($u = $users->fetch_assoc()): ?>
-            <tr>
-                <td><?php echo $u['id']; ?></td>
-                <td><b><?php echo htmlspecialchars($u['full_name']); ?></b></td>
-                <td>@<?php echo htmlspecialchars($u['username']); ?></td>
-                <td><?php echo htmlspecialchars($u['email']); ?></td>
-                <td>
-                    <span class="badge <?php echo ($u['role']=='admin') ? 'badge-admin' : 'badge-user'; ?>">
-                        <?php echo strtoupper($u['role']); ?>
-                    </span>
-                </td>
-                <td><?php echo date('d/m/Y', strtotime($u['created_at'])); ?></td>
-                <td>
-                    <?php if($u['id'] != $_SESSION['user_id']): ?>
-                        <a href="?delete_id=<?php echo $u['id']; ?>" class="btn-del" onclick="return confirm('Bạn có chắc muốn xóa người dùng này?')">Xóa</a>
-                    <?php else: ?>
-                        <small style="color: #ccc;">(Bạn)</small>
-                    <?php endif; ?>
-                </td>
-            </tr>
-            <?php endwhile; ?>
+            <?php if ($users->num_rows > 0): ?>
+                <?php while($u = $users->fetch_assoc()): ?>
+                <tr>
+                    <td>#<?php echo $u['id']; ?></td>
+                    <td>
+                        <div style="font-weight: 600; color: #334155;"><?php echo htmlspecialchars($u['full_name']); ?></div>
+                    </td>
+                    <td>@<?php echo htmlspecialchars($u['username']); ?></td>
+                    <td><?php echo htmlspecialchars($u['email']); ?></td>
+                    <td>
+                        <span class="badge <?php echo ($u['role']=='admin') ? 'badge-primary' : 'badge-info'; ?>" 
+                              style="<?php echo ($u['role']=='admin') ? 'background:#e0f2fe; color:#0369a1;' : 'background:#f1f5f9; color:#475569;'; ?>">
+                            <?php echo strtoupper($u['role']); ?>
+                        </span>
+                    </td>
+                    <td>
+                        <?php if($u['status'] == 'active'): ?>
+                            <span class="badge badge-success">Hoạt động</span>
+                        <?php else: ?>
+                            <span class="badge badge-danger">Bị khóa</span>
+                        <?php endif; ?>
+                    </td>
+                    <td><?php echo date('d/m/Y', strtotime($u['created_at'])); ?></td>
+                    <td>
+                        <?php if($u['id'] != $_SESSION['user_id']): ?>
+                            <div style="display: flex; gap: 10px;">
+                                <!-- Nút Khóa/Mở khóa -->
+                                <a href="?ban_id=<?php echo $u['id']; ?>" 
+                                   style="text-decoration: none; font-size: 13px; font-weight: 600; color: <?php echo ($u['status']=='active') ? '#f59e0b' : '#10b981'; ?>;"
+                                   onclick="return confirm('Bạn muốn thay đổi trạng thái người dùng này?')">
+                                   <?php echo ($u['status']=='active') ? '🔒 Khóa' : '🔓 Mở'; ?>
+                                </a>
+
+                                <!-- Nút Xóa -->
+                                <a href="?delete_id=<?php echo $u['id']; ?>" 
+                                   style="color: #ef4444; text-decoration: none; font-size: 13px; font-weight: 600;" 
+                                   onclick="return confirm('CẢNH BÁO: Xóa người dùng sẽ xóa HẾT dữ liệu của họ.\nBạn có chắc chắn không?')">
+                                   ❌ Xóa
+                                </a>
+                            </div>
+                        <?php else: ?>
+                            <small style="color: #cbd5e1; font-style: italic;">(Bạn)</small>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endwhile; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 40px; color: #94a3b8;">
+                        Chưa có người dùng nào.
+                    </td>
+                </tr>
+            <?php endif; ?>
         </tbody>
     </table>
 </div>

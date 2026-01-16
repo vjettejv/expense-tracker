@@ -40,7 +40,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <!-- === SIDEBAR (MENU TRÁI) === -->
         <aside class="sidebar js-sidebar">
             <div class="brand-box">
-                <a href="<?php echo $base_url; ?>/index.php" class="brand">ExpenseTracker.</a>
+                <a class="brand">ExpenseTracker</a>
                 <button class="close-sidebar-btn js-close-sidebar">✕</button>
             </div>
             

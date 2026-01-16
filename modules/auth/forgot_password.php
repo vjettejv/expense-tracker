@@ -1,70 +1,133 @@
 <?php
+session_start();
 require_once '../../config/db.php';
-
-// Xử lý gửi mã OTP (Giả lập gửi email)
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $email = sanitize($_POST['email']);
-
-    $stmt = $conn->prepare("SELECT id, full_name FROM users WHERE email = ?");
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $res = $stmt->get_result();
-
-    if ($res->num_rows > 0) {
-        // Tạo token ngẫu nhiên (OTP)
-        $otp = rand(100000, 999999);
-        $user = $res->fetch_assoc();
-        
-        // Lưu OTP vào DB với thời hạn 15 phút
-        // Lưu ý: Cần chỉnh múi giờ DB cho khớp hoặc dùng hàm NOW()
-        $conn->query("UPDATE users SET reset_token = '$otp', reset_exp = DATE_ADD(NOW(), INTERVAL 15 MINUTE) WHERE email = '$email'");
-
-        // GỬI EMAIL (Ở đây ta giả lập bằng cách hiện thông báo)
-        // Trong thực tế, dùng PHPMailer để gửi $otp vào $email
-        // $subject = "Mã xác thực lấy lại mật khẩu";
-        // $message = "Mã OTP của bạn là: " . $otp;
-        // mail($email, $subject, $message);
-
-        set_flash_message("Mã OTP đã được gửi đến email $email (Demo: $otp)", 'success');
-        $_SESSION['reset_email'] = $email; // Lưu email để qua bước sau dùng
-        redirect('reset_password.php');
-
-    } else {
-        set_flash_message('Email này chưa được đăng ký!', 'error');
-    }
-}
 ?>
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <title>Quên mật khẩu</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quên mật khẩu | Expense Tracker</title>
+    <!-- Tái sử dụng CSS Login để đồng bộ -->
     <link rel="stylesheet" href="../../assets/css/login.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Barlow:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../assets/css/toast.css">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        /* CSS bổ sung để căn chỉnh form quên mật khẩu */
+        .fp-container {
+            width: 100%;
+            padding: 0 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .fp-text {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .fp-text h3 {
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #262626;
+        }
+        
+        .fp-text p {
+            color: #8e8e8e;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .or-divider {
+            display: flex;
+            width: 100%;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .or-divider span {
+            height: 1px;
+            background-color: #dbdbdb;
+            flex: 1;
+        }
+
+        .or-divider b {
+            color: #8e8e8e;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 0 10px;
+            text-transform: uppercase;
+        }
+        
+        /* Box đăng ký mới - nằm ngoài main */
+        .register-box {
+            width: 350px;
+            background: white;
+            border: 1px solid #dbdbdb;
+            margin: 10px auto; /* Căn giữa */
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
+
     <div id="main">
         <div id="logo">
-            <span class="logo-text">Khôi phục mật khẩu</span>
+            <a href="../../index.php" class="logo-text">ExpenseTracker</a>
         </div>
         
-        <div style="padding: 0 40px; text-align: center; color: #8e8e8e; font-size: 14px; margin-bottom: 20px;">
-            Nhập email của bạn, chúng tôi sẽ gửi mã xác thực để đặt lại mật khẩu.
+        <div class="fp-container">
+            <!-- Icon ổ khóa (Tùy chọn cho đẹp giống Instagram) -->
+            <div style="margin-bottom: 15px;">
+                <svg aria-label="Biểu tượng khóa" class="_8-yf5 " color="#262626" fill="#262626" height="60" role="img" viewBox="0 0 96 96" width="60"><circle cx="48" cy="48" fill="none" r="47" stroke="currentColor" stroke-miterlimit="10" stroke-width="2"></circle><path d="M48 60.1c-2.3 0-4.2-1.9-4.2-4.2s1.9-4.2 4.2-4.2 4.2 1.9 4.2 4.2-1.8 4.2-4.2 4.2zM58.3 35.8h-2.5v-5.2c0-4.3-3.5-7.8-7.8-7.8s-7.8 3.5-7.8 7.8v5.2h-2.5c-2 0-3.6 1.6-3.6 3.6v17.7c0 2 1.6 3.6 3.6 3.6h20.6c2 0 3.6-1.6 3.6-3.6V39.4c0-2-1.6-3.6-3.6-3.6zM42.5 30.6c0-3 2.5-5.5 5.5-5.5s5.5 2.5 5.5 5.5v5.2h-11v-5.2z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"></path></svg>
+            </div>
+
+            <div class="fp-text">
+                <h3>Gặp sự cố đăng nhập?</h3>
+                <p>Nhập email của bạn và chúng tôi sẽ gửi cho bạn một liên kết để truy cập lại vào tài khoản.</p>
+            </div>
+
+            <form action="send_reset.php" method="POST" style="width: 100%;">
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <input type="email" name="email" class="form-control" placeholder="Email" required style="width: 100%;">
+                </div>
+
+                <button type="submit" class="btn-submit" style="width: 100%;">Gửi liên kết đăng nhập</button>
+            </form>
+
+            <div class="or-divider">
+                <span></span>
+                <b>Hoặc</b>
+                <span></span>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <a href="register.php" style="text-decoration: none; color: #262626; font-weight: 600; font-size: 14px;">Tạo tài khoản mới</a>
+            </div>
         </div>
 
-        <form method="POST" style="display: flex; flex-direction: column; align-items: center;">
-            <input type="email" name="email" class="form-control" placeholder="Nhập email đăng ký" required>
-            <button type="submit" class="btn-submit">Gửi mã xác thực</button>
-        </form>
-
-        <div class="register-link">
-            <a href="login.php">Quay lại Đăng nhập</a>
+        <!-- Footer quay lại đăng nhập -->
+        <div style="width: 100%; background-color: #fafafa; border-top: 1px solid #dbdbdb; padding: 10px 0; text-align: center; margin-top: auto;">
+            <a href="login.php" style="text-decoration: none; color: #262626; font-weight: 600; font-size: 14px;">Quay lại Đăng nhập</a>
         </div>
     </div>
-    
+
     <div id="toast-container"></div>
     <script src="../../assets/js/toast.js"></script>
-    <?php display_flash_message(); ?>
+
+    <!-- Hiển thị thông báo nếu có -->
+    <?php if(isset($_GET['msg'])): ?>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const msg = "<?php echo htmlspecialchars($_GET['msg']); ?>";
+                const type = "<?php echo isset($_GET['type']) ? $_GET['type'] : 'info'; ?>";
+                showToast(msg, type);
+            });
+        </script>
+    <?php endif; ?>
+
 </body>
 </html>

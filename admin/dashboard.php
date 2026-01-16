@@ -22,7 +22,6 @@ include '../includes/header.php';
 
 <div style="margin-bottom: 30px;">
     <h2 style="margin: 0;">Admin Control Center ⚡</h2>
-    <p style="color: #64748b;">Góc nhìn toàn cảnh hệ thống (God View)</p>
 </div>
 
 <div style="display: flex; gap: 24px; flex-wrap: wrap;">
@@ -81,7 +80,7 @@ include '../includes/header.php';
 <div class="card">
     <h3>🛠 Quản lý hệ thống</h3>
     <div style="display: flex; gap: 15px;">
-        <a href="users.php" class="btn btn-primary">Quản lý User (Khóa/Mở)</a>
+        <a href="users.php" class="btn btn-primary">Quản lý User</a>
         <a href="../modules/categories/index.php" class="btn btn-primary" style="background: #6366f1;">Quản lý Danh mục Chung</a>
     </div>
 </div>

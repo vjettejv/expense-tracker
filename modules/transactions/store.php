@@ -2,41 +2,76 @@
 session_start();
 require_once '../../config/db.php';
 
+// Chỉ xử lý POST và phải đăng nhập
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
     
     $user_id = $_SESSION['user_id'];
-    $wallet_id = intval($_POST['wallet_id']);
-    $category_id = intval($_POST['category_id']);
-    $amount = floatval($_POST['amount']);
-    $transaction_date = $_POST['transaction_date'];
-    $note = sanitize($_POST['note']);
+    
+    // 1. Lấy và Làm sạch dữ liệu (Sanitize)
+    // Dùng trim() để loại bỏ khoảng trắng thừa
+    $wallet_id = isset($_POST['wallet_id']) ? intval($_POST['wallet_id']) : 0;
+    $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
+    $amount = isset($_POST['amount']) ? floatval($_POST['amount']) : 0;
+    $transaction_date = isset($_POST['transaction_date']) ? trim($_POST['transaction_date']) : '';
+    $note = isset($_POST['note']) ? trim($_POST['note']) : '';
 
-    // 1. Validate
+    // 2. Validate dữ liệu
+    $errors = [];
+
     if ($amount <= 0) {
-        die("Số tiền phải lớn hơn 0");
-    }
-    if ($wallet_id == 0 || $category_id == 0) {
-        die("Vui lòng chọn ví và danh mục");
+        $errors[] = "Số tiền phải lớn hơn 0.";
     }
 
-    // 2. Xác định loại giao dịch (Thu hay Chi) từ Category
+    if ($wallet_id <= 0) {
+        $errors[] = "Vui lòng chọn ví thanh toán.";
+    }
+
+    if ($category_id <= 0) {
+        $errors[] = "Vui lòng chọn danh mục.";
+    }
+
+    if (empty($transaction_date)) {
+        $errors[] = "Ngày giao dịch không được để trống.";
+    }
+
+    // Nếu có lỗi, lưu vào session và quay lại trang create
+    if (!empty($errors)) {
+        // Gộp mảng lỗi thành 1 chuỗi để hiển thị Toast
+        $_SESSION['flash_message'] = implode("<br>", $errors); 
+        $_SESSION['flash_type'] = 'error'; // Loại thông báo lỗi
+        header("Location: create.php");
+        exit();
+    }
+
+    // 3. Logic Nghiệp vụ (Check DB)
+    
+    // Xác định loại giao dịch (Thu hay Chi) từ Category
     $sql_type = "SELECT type FROM categories WHERE id = ?";
     $stmt_type = $conn->prepare($sql_type);
     $stmt_type->bind_param("i", $category_id);
     $stmt_type->execute();
     $res_type = $stmt_type->get_result();
     
-    if ($res_type->num_rows == 0) die("Danh mục không tồn tại");
+    if ($res_type->num_rows == 0) {
+        $_SESSION['flash_message'] = "Danh mục không tồn tại!";
+        $_SESSION['flash_type'] = 'error';
+        header("Location: create.php");
+        exit();
+    }
+    
     $type = $res_type->fetch_assoc()['type']; // 'income' hoặc 'expense'
 
-    // 3. Bắt đầu Transaction (Database) để đảm bảo toàn vẹn dữ liệu
+    // 4. Bắt đầu Transaction (Database)
     $conn->begin_transaction();
 
     try {
         // A. Thêm vào bảng transactions
         $sql_trans = "INSERT INTO transactions (user_id, wallet_id, category_id, amount, transaction_date, note) VALUES (?, ?, ?, ?, ?, ?)";
         $stmt_trans = $conn->prepare($sql_trans);
-        $stmt_trans->bind_param("iiidss", $user_id, $wallet_id, $category_id, $amount, $transaction_date, $note);
+        // note cần sanitize kỹ hơn để tránh XSS nếu hiển thị lại
+        $clean_note = htmlspecialchars($note);
+        $stmt_trans->bind_param("iiidss", $user_id, $wallet_id, $category_id, $amount, $transaction_date, $clean_note);
+        
         if (!$stmt_trans->execute()) {
             throw new Exception("Lỗi thêm giao dịch: " . $stmt_trans->error);
         }
@@ -59,12 +94,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
 
         // C. Hoàn tất
         $conn->commit();
-        set_flash_message("Thêm giao dịch thành công!", "success");
-        header("Location: index.php");
+        
+        // Dùng cơ chế Toast thông báo (giả sử header.php xử lý hiển thị session này)
+        // Nếu chưa có, bạn có thể redirect kèm param msg=success
+        header("Location: index.php?msg=success_add");
 
     } catch (Exception $e) {
         $conn->rollback(); // Có lỗi thì hoàn tác hết
-        echo "Giao dịch thất bại: " . $e->getMessage();
+        $_SESSION['flash_message'] = "Giao dịch thất bại: " . $e->getMessage();
+        $_SESSION['flash_type'] = 'error';
+        header("Location: create.php");
     }
 
 } else {

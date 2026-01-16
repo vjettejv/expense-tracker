@@ -24,7 +24,11 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-define('BASE_URL', '/expense-tracker'); // Đổi đường dẫn nếu bạn đặt thư mục khác
+$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https://" : "http://";
+// Tự động lấy tên miền (localhost hoặc domain.com)
+$host = $_SERVER['HTTP_HOST'];
+// Đường dẫn gốc của dự án
+define('BASE_URL', $protocol . $host . '/expense-tracker');  // Đổi đường dẫn nếu bạn đặt thư mục khác
 
 // =========================================================================
 // PHẦN 3: CÁC HÀM DÙNG CHUNG (HELPER FUNCTIONS) - GIẢI QUYẾT VẤN ĐỀ DRY

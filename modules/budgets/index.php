@@ -5,8 +5,7 @@ require_login();
 
 $user_id = $_SESSION['user_id'];
 
-// TRUY VẤN THÔNG MINH:
-// Lấy hạn mức VÀ tính luôn tổng tiền đã chi (spent) cho danh mục đó trong tháng đó
+// 1. Lấy danh sách Hạn mức + Tính toán số tiền đã chi (spent)
 $sql = "SELECT b.*, c.name as cat_name, c.color as cat_color,
             (SELECT SUM(amount) FROM transactions t 
              WHERE t.user_id = b.user_id 
@@ -20,6 +19,10 @@ $sql = "SELECT b.*, c.name as cat_name, c.color as cat_color,
 
 $result = $conn->query($sql);
 
+// 2. Lấy danh sách Danh mục (Chỉ lấy loại Chi tiêu) để điền vào Modal
+$sql_cat = "SELECT * FROM categories WHERE (user_id = $user_id OR user_id IS NULL) AND type='expense'";
+$list_cat = $conn->query($sql_cat);
+
 include '../../includes/header.php';
 ?>
 
@@ -28,35 +31,39 @@ include '../../includes/header.php';
         <h2 style="margin: 0;">Kế hoạch Ngân sách</h2>
         <p style="color: #64748b; margin-top: 5px;">Kiểm soát chi tiêu, tránh vung tay quá trán.</p>
     </div>
-    <a href="create.php" class="btn btn-primary">
+    
+    <!-- NÚT MỞ MODAL -->
+    <button class="btn btn-primary js-buy-tickets">
         <span>+</span> Lập Hạn mức mới
-    </a>
+    </button>
 </div>
 
+<!-- LƯỚI HIỂN THỊ NGÂN SÁCH -->
 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px;">
 
     <?php if ($result->num_rows > 0): ?>
         <?php while($row = $result->fetch_assoc()): ?>
             <?php 
                 $limit = $row['amount'];
-                $spent = $row['spent'] ?? 0; // Nếu chưa chi đồng nào thì là 0
-                $percent = ($spent / $limit) * 100;
-                $percent = min($percent, 100); // Tối đa 100% để vẽ CSS
+                $spent = $row['spent'] ?? 0;
+                // Tính % đã chi
+                $percent = ($limit > 0) ? ($spent / $limit) * 100 : 0;
+                $percent_draw = min($percent, 100); // Để vẽ CSS không bị tràn quá 100%
 
-                // Logic màu sắc
+                // Logic màu sắc cảnh báo
                 $status_color = '#10b981'; // Xanh (An toàn)
                 $status_text = 'An toàn';
                 if ($spent > $limit) {
                     $status_color = '#ef4444'; // Đỏ (Vỡ nợ)
-                    $status_text = 'Vượt quá hạn mức!';
+                    $status_text = 'Vượt hạn mức!';
                 } elseif ($percent >= 80) {
                     $status_color = '#f59e0b'; // Vàng (Cảnh báo)
-                    $status_text = 'Sắp hết tiền';
+                    $status_text = 'Sắp hết';
                 }
             ?>
 
             <!-- Card Ngân Sách -->
-            <div class="card" style="border-left: 5px solid <?php echo $row['cat_color']; ?>;">
+            <div class="card" style="border-left: 5px solid <?php echo $row['cat_color']; ?>; margin-bottom: 0;">
                 
                 <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
                     <div>
@@ -75,28 +82,88 @@ include '../../includes/header.php';
                 <div style="margin-bottom: 10px;">
                     <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px;">
                         <span>Đã chi: <b><?php echo number_format($spent); ?> đ</b></span>
-                        <span style="color: <?php echo $status_color; ?>; font-weight: bold;"><?php echo $status_text; ?></span>
+                        <span style="color: <?php echo $status_color; ?>; font-weight: bold;">
+                            <?php echo $status_text; ?> (<?php echo round($percent); ?>%)
+                        </span>
                     </div>
                     <div style="width: 100%; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden;">
-                        <div style="width: <?php echo $percent; ?>%; height: 100%; background: <?php echo $status_color; ?>; border-radius: 4px;"></div>
+                        <div style="width: <?php echo $percent_draw; ?>%; height: 100%; background: <?php echo $status_color; ?>; border-radius: 4px;"></div>
                     </div>
                 </div>
 
                 <div style="display: flex; justify-content: flex-end; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #e2e8f0;">
-                    <a href="delete.php?id=<?php echo $row['id']; ?>" class="btn-sm" style="color: #ef4444; text-decoration: none;" onclick="return confirm('Xóa hạn mức này?')">🗑️ Xóa bỏ</a>
+                    <a href="delete.php?id=<?php echo $row['id']; ?>" 
+                       style="color: #ef4444; text-decoration: none; font-size: 13px; display: flex; align-items: center; gap: 5px;" 
+                       onclick="return confirm('Xóa hạn mức này?')">
+                        🗑️ Xóa bỏ
+                    </a>
                 </div>
             </div>
 
         <?php endwhile; ?>
     <?php else: ?>
+        <!-- Giao diện trống -->
         <div style="grid-column: 1 / -1; text-align: center; padding: 50px; background: white; border-radius: 12px; border: 1px dashed #cbd5e1;">
             <div style="font-size: 40px; margin-bottom: 10px;">📉</div>
             <h3 style="color: #64748b;">Chưa có kế hoạch nào</h3>
             <p style="color: #94a3b8;">Đặt giới hạn chi tiêu giúp bạn tiết kiệm tiền hiệu quả hơn.</p>
-            <a href="create.php" class="btn btn-primary" style="margin-top: 10px;">Lập ngân sách ngay</a>
+            <button class="btn btn-primary js-buy-tickets" style="margin-top: 10px;">Lập ngân sách ngay</button>
         </div>
     <?php endif; ?>
 
 </div>
+
+<!-- ================= MODAL THÊM NGÂN SÁCH ================= -->
+<div class="modal js-modal">
+    <div class="modal-container js-modal-container">
+        <div class="modal-close js-modal-close">✕</div>
+        <header class="modal-header">Thiết lập Hạn Mức</header>
+        <div class="modal-body">
+            <form action="store.php" method="POST">
+                
+                <div class="form-group">
+                    <label class="form-label">Áp dụng cho tháng</label>
+                    <input type="month" name="month_year" class="form-control" required value="<?php echo date('Y-m'); ?>">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Danh mục chi tiêu</label>
+                    <select name="category_id" class="form-control" required>
+                        <?php while($cat = $list_cat->fetch_assoc()): ?>
+                            <option value="<?php echo $cat['id']; ?>">
+                                <?php echo htmlspecialchars($cat['name']); ?>
+                            </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Số tiền giới hạn (VNĐ)</label>
+                    <input type="number" name="amount" class="form-control" placeholder="Ví dụ: 3000000" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                    Lưu Hạn Mức
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JS XỬ LÝ MODAL -->
+<script>
+    const buyBtns = document.querySelectorAll('.js-buy-tickets')
+    const modal = document.querySelector('.js-modal')
+    const modalContainer = document.querySelector('.js-modal-container')
+    const modalClose = document.querySelector('.js-modal-close')
+
+    function showBuyTicket() { modal.classList.add('open') }
+    function hideBuyTicket() { modal.classList.remove('open') }
+
+    for (const buyBtn of buyBtns) { buyBtn.addEventListener('click', showBuyTicket) }
+    modalClose.addEventListener('click', hideBuyTicket)
+    modal.addEventListener('click', hideBuyTicket)
+    modalContainer.addEventListener('click', function(event){ event.stopPropagation() })
+</script>
 
 <?php include '../../includes/footer.php'; ?>
