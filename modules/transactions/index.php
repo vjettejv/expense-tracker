@@ -217,11 +217,8 @@ include '../../includes/header.php';
                         </td>
                         <td>
                             <!-- Link xóa trỏ về file delete.php riêng biệt -->
-                            <a href="delete.php?id=<?php echo $row['id']; ?>" 
-                               style="color: #ef4444; text-decoration: none; font-size: 13px; font-weight: 600;" 
-                               onclick="return confirm('Bạn có chắc muốn xóa giao dịch này? Tiền sẽ được hoàn lại vào ví.')">
-                               ❌ Xóa
-                            </a>
+                            <a href="view.php?id=<?php echo $row['id']; ?>" title="Xem chi tiết" style="text-decoration: none; color: #3b82f6; margin-right: 15px;">👁️ Xem</a>
+                            <a href="delete.php?id=<?php echo $row['id']; ?>" title="Xóa giao dịch" style="text-decoration: none; color: #ef4444;" onclick="return confirm('Bạn có chắc muốn xóa giao dịch này? Số dư ví sẽ được cập nhật lại (Rollback).')">❌ Xóa</a>
                         </td>
                     </tr>
                 <?php endwhile; ?>
