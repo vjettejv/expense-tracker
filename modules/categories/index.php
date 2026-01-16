@@ -1,82 +1,98 @@
 <?php
 session_start();
 require_once '../../config/db.php';
-
-// Kiểm tra đăng nhập
-if (!isset($_SESSION['user_id'])) {
-    header("Location: ../auth/login.php");
-    exit();
-}
-
-include '../../includes/header.php';
+require_login();
 
 $user_id = $_SESSION['user_id'];
+$result = $conn->query("SELECT * FROM categories WHERE user_id = $user_id OR user_id IS NULL ORDER BY created_at DESC");
 
-// Lấy danh sách danh mục
-$sql = "SELECT * FROM categories WHERE user_id = $user_id OR user_id IS NULL ORDER BY created_at DESC";
-$result = $conn->query($sql);
+include '../../includes/header.php';
 ?>
-<link rel="stylesheet" href="../../assets/css/cate_index.css">
-<div class="container">
-    
-    <!-- Phần tiêu đề và nút bấm (Dùng Flexbox) -->
-    <div class="header-row">
-        <h2>📂 Quản lý Danh mục</h2>
-        <a href="create.php" class="btn-them">+ Thêm Danh mục</a>
-    </div>
 
-    <!-- Bảng hiển thị -->
-    <table>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <div>
+        <h2 style="margin: 0;">Danh mục</h2>
+        <p style="color: #64748b; margin-top: 5px;">Phân loại thu chi.</p>
+    </div>
+    <button class="btn btn-primary js-buy-tickets">
+        <span>+</span> Thêm Danh mục
+    </button>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden;">
+    <table class="custom-table">
         <thead>
             <tr>
-                <th>Tên danh mục</th>
+                <th>Tên</th>
                 <th>Loại</th>
                 <th>Màu</th>
-                <th>Nguồn gốc</th>
                 <th>Hành động</th>
             </tr>
         </thead>
         <tbody>
-            <?php if ($result->num_rows > 0): ?>
-                <?php while($row = $result->fetch_assoc()): ?>
-                    <tr>
-                        <td>
-                            <!-- Hiện dấu chấm màu -->
-                            <span class="dot" style="background-color: <?php echo $row['color']; ?>;"></span>
-                            <b><?php echo $row['name']; ?></b>
-                        </td>
-                        <td>
-                            <?php if ($row['type'] == 'income'): ?>
-                                <span class="thu">Khoản Thu</span>
-                            <?php else: ?>
-                                <span class="chi">Khoản Chi</span>
-                            <?php endif; ?>
-                        </td>
-                        <td><?php echo $row['color']; ?></td>
-                        <td>
-                            <?php if ($row['user_id'] == null): ?>
-                                <span style="color: #666; font-style: italic;">Mặc định</span>
-                            <?php else: ?>
-                                <span style="color: #0095f6; font-weight: bold;">Của tôi</span>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <!-- Chỉ hiện nút Xóa nếu là danh mục của mình -->
-                            <?php if ($row['user_id'] != null): ?>
-                                <a href="delete.php?id=<?php echo $row['id']; ?>" class="xoa" onclick="return confirm('Bạn có chắc muốn xóa?')">Xóa</a>
-                            <?php else: ?>
-                                <span style="color: #ccc;">--</span>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                <?php endwhile; ?>
-            <?php else: ?>
+            <?php while($row = $result->fetch_assoc()): ?>
                 <tr>
-                    <td colspan="5" style="text-align: center; color: #888;">Chưa có danh mục nào.</td>
+                    <td>
+                        <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:<?php echo $row['color']; ?>; margin-right:5px;"></span>
+                        <?php echo htmlspecialchars($row['name']); ?>
+                    </td>
+                    <td><?php echo ($row['type']=='income') ? '<span class="badge badge-success">Thu</span>' : '<span class="badge badge-danger">Chi</span>'; ?></td>
+                    <td><?php echo $row['color']; ?></td>
+                    <td>
+                        <?php if($row['user_id'] != null): ?>
+                            <a href="delete.php?id=<?php echo $row['id']; ?>" style="color:#ef4444;" onclick="return confirm('Xóa?')">Xóa</a>
+                        <?php else: ?>
+                            <small>Mặc định</small>
+                        <?php endif; ?>
+                    </td>
                 </tr>
-            <?php endif; ?>
+            <?php endwhile; ?>
         </tbody>
     </table>
 </div>
+
+<!-- ================= MODAL THÊM DANH MỤC ================= -->
+<div class="modal js-modal">
+    <div class="modal-container js-modal-container">
+        <div class="modal-close js-modal-close">✕</div>
+        <header class="modal-header">Thêm Danh Mục</header>
+        <div class="modal-body">
+            <form action="store.php" method="POST">
+                <div class="form-group">
+                    <label class="form-label">Tên danh mục</label>
+                    <input type="text" name="name" class="form-control" required placeholder="VD: Ăn sáng...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Loại</label>
+                    <select name="type" class="form-control">
+                        <option value="expense">Khoản Chi (Expense)</option>
+                        <option value="income">Khoản Thu (Income)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Màu sắc</label>
+                    <input type="color" name="color" class="form-control" style="height: 50px;" value="#0095f6">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Lưu</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JS -->
+<script>
+    const buyBtns = document.querySelectorAll('.js-buy-tickets')
+    const modal = document.querySelector('.js-modal')
+    const modalContainer = document.querySelector('.js-modal-container')
+    const modalClose = document.querySelector('.js-modal-close')
+
+    function showBuyTicket() { modal.classList.add('open') }
+    function hideBuyTicket() { modal.classList.remove('open') }
+
+    for (const buyBtn of buyBtns) { buyBtn.addEventListener('click', showBuyTicket) }
+    modalClose.addEventListener('click', hideBuyTicket)
+    modal.addEventListener('click', hideBuyTicket)
+    modalContainer.addEventListener('click', function(event){ event.stopPropagation() })
+</script>
 
 <?php include '../../includes/footer.php'; ?>

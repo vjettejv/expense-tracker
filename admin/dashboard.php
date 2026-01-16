@@ -1,77 +1,88 @@
 <?php
 session_start();
 require_once '../config/db.php';
+require_admin();
 
-// Kiểm tra quyền Admin
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-    header("Location: ../index.php");
-    exit();
-}
+// 1. TOP ĐẠI GIA (Người có tổng số dư ví cao nhất)
+$sql_rich = "SELECT u.full_name, SUM(w.balance) as total_asset 
+             FROM wallets w JOIN users u ON w.user_id = u.id 
+             GROUP BY w.user_id ORDER BY total_asset DESC LIMIT 5";
+$top_rich = $conn->query($sql_rich);
 
-// Thống kê dữ liệu
-$total_users = $conn->query("SELECT COUNT(*) as total FROM users")->fetch_assoc()['total'];
-$total_transactions = $conn->query("SELECT COUNT(*) as total FROM transactions")->fetch_assoc()['total'];
-$total_balance = $conn->query("SELECT SUM(balance) as total FROM wallets")->fetch_assoc()['total'];
+// 2. TOP TIÊU HOANG (Người chi tiêu nhiều nhất tháng này)
+$sql_spend = "SELECT u.full_name, SUM(t.amount) as total_spent 
+              FROM transactions t JOIN users u ON t.user_id = u.id 
+              JOIN categories c ON t.category_id = c.id
+              WHERE c.type = 'expense' AND MONTH(t.transaction_date) = MONTH(CURRENT_DATE())
+              GROUP BY t.user_id ORDER BY total_spent DESC LIMIT 5";
+$top_spenders = $conn->query($sql_spend);
 
 include '../includes/header.php';
 ?>
 
-<style>
-    .admin-stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 20px;
-        margin-bottom: 40px;
-    }
-    .stat-box {
-        background: white;
-        padding: 30px;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        text-align: center;
-        border-top: 4px solid #0095f6;
-    }
-    .stat-box h3 { font-size: 14px; color: #8e8e8e; text-transform: uppercase; }
-    .stat-box p { font-size: 28px; font-weight: bold; margin-top: 10px; color: #333; }
+<div style="margin-bottom: 30px;">
+    <h2 style="margin: 0;">Admin Control Center ⚡</h2>
+    <p style="color: #64748b;">Góc nhìn toàn cảnh hệ thống (God View)</p>
+</div>
+
+<div style="display: flex; gap: 24px; flex-wrap: wrap;">
     
-    .admin-actions {
-        display: flex;
-        gap: 15px;
-        justify-content: center;
-    }
-    .btn-admin {
-        padding: 15px 25px;
-        border-radius: 8px;
-        text-decoration: none;
-        font-weight: bold;
-        color: white;
-    }
-    .bg-blue { background: #0095f6; }
-    .bg-green { background: #2ecc71; }
-</style>
-
-<div class="container">
-    <h2 style="margin-bottom: 30px;">⚡ Bảng điều khiển Quản trị viên</h2>
-
-    <div class="admin-stats">
-        <div class="stat-box">
-            <h3>Tổng người dùng</h3>
-            <p><?php echo $total_users; ?></p>
+    <!-- Bảng xếp hạng ĐẠI GIA -->
+    <div class="card" style="flex: 1;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <h3 style="margin: 0;">🏆 Top Tài Sản Cao Nhất</h3>
         </div>
-        <div class="stat-box" style="border-top-color: #2ecc71;">
-            <h3>Tổng giao dịch</h3>
-            <p><?php echo $total_transactions; ?></p>
-        </div>
-        <div class="stat-box" style="border-top-color: #f1c40f;">
-            <h3>Dòng tiền hệ thống</h3>
-            <p><?php echo number_format($total_balance); ?> đ</p>
-        </div>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Thành viên</th>
+                    <th>Tổng tài sản</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php $i=1; while($row = $top_rich->fetch_assoc()): ?>
+                <tr>
+                    <td><?php echo $i++; ?></td>
+                    <td style="font-weight: 600;"><?php echo htmlspecialchars($row['full_name']); ?></td>
+                    <td style="color: #10b981; font-weight: bold;"><?php echo number_format($row['total_asset']); ?> đ</td>
+                </tr>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
     </div>
 
-    <div class="admin-actions">
-        <a href="users.php" class="btn-admin bg-blue">👥 Quản lý Thành viên</a>
-        <a href="admin_report.php" class="btn-admin bg-green">📊 Báo cáo Giao dịch</a>
-        <a href="../index.php" class="btn-admin bg-blue">Chi tiêu</a>
+    <!-- Bảng xếp hạng TIÊU HOANG -->
+    <div class="card" style="flex: 1;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <h3 style="margin: 0;">🔥 Top Chi Tiêu Tháng Này</h3>
+        </div>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Thành viên</th>
+                    <th>Đã chi</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php $i=1; while($row = $top_spenders->fetch_assoc()): ?>
+                <tr>
+                    <td><?php echo $i++; ?></td>
+                    <td style="font-weight: 600;"><?php echo htmlspecialchars($row['full_name']); ?></td>
+                    <td style="color: #ef4444; font-weight: bold;"><?php echo number_format($row['total_spent']); ?> đ</td>
+                </tr>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3>🛠 Quản lý hệ thống</h3>
+    <div style="display: flex; gap: 15px;">
+        <a href="users.php" class="btn btn-primary">Quản lý User (Khóa/Mở)</a>
+        <a href="../modules/categories/index.php" class="btn btn-primary" style="background: #6366f1;">Quản lý Danh mục Chung</a>
     </div>
 </div>
 

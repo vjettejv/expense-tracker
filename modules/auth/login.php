@@ -1,88 +1,78 @@
 <?php
-session_start();
-
-if (isset($_SESSION['user_id'])) {
-    if (isset($_SESSION['role']) && $_SESSION['role'] == 'admin') {
-        header("Location: ../../admin/dashboard.php");
-    } else {
-        header("Location: ../../index.php");
-    }
-    exit();
-}
-
 require_once '../../config/db.php';
 
-$error_msg = '';
+// Nếu đã đăng nhập
+if (isset($_SESSION['user_id'])) {
+    if ($_SESSION['role'] == 'admin') {
+        redirect(BASE_URL . '/admin/dashboard.php');
+    } else {
+        redirect(BASE_URL . '/index.php');
+    }
+}
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-
-    $username = trim($_POST['username']);
-    $password = trim($_POST['password']);
+    $username = sanitize($_POST['username']);
+    $password = $_POST['password'];
 
     if (empty($username) || empty($password)) {
-        $error_msg = "Vui lòng nhập đầy đủ thông tin!";
+        set_flash_message('Vui lòng nhập đầy đủ thông tin!', 'error');
     } else {
-        $password_hash = md5($password);
+        $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $result = $stmt->get_result();
 
-        $sql = "SELECT * FROM users WHERE username = ? AND password = ?";
+        if ($result->num_rows === 1) {
+            $user = $result->fetch_assoc();
 
-        if ($stmt = $conn->prepare($sql)) {
-            $stmt->bind_param("ss", $username, $password_hash);
-            $stmt->execute();
-            $result = $stmt->get_result();
+            // Kiểm tra trạng thái khóa
+            if ($user['status'] === 'banned') {
+                set_flash_message('Tài khoản của bạn đã bị KHÓA do vi phạm!', 'error');
+            } 
+            // NÂNG CẤP: Verify hash password
+            elseif (password_verify($password, $user['password'])) {
+                // Đăng nhập thành công
+                $_SESSION['user_id']   = $user['id'];
+                $_SESSION['username']  = $user['username'];
+                $_SESSION['full_name'] = $user['full_name'];
+                $_SESSION['role']      = $user['role'];
+                $_SESSION['avatar']    = $user['avatar'];
 
-            if ($result->num_rows === 1) {
-                $user = $result->fetch_assoc();
-
-                if ($user['status'] === 'banned') {
-                    $error_msg = "Tài khoản bị KHÓA do vi phạm chính sách!";
+                set_flash_message('Chào mừng trở lại, ' . $user['full_name'] . '!', 'success');
+                
+                if ($user['role'] === 'admin') {
+                    redirect(BASE_URL . '/admin/dashboard.php');
                 } else {
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['username'] = $user['username'];
-                    $_SESSION['full_name'] = $user['full_name'];
-                    $_SESSION['role'] = $user['role'];
-                    $_SESSION['avatar'] = $user['avatar'];
-
-                    if ($user['role'] === 'admin') {
-                        header("Location: ../../admin/dashboard.php");
-                    } else {
-                        header("Location: ../../index.php");
-                    }
-                    exit();
+                    redirect(BASE_URL . '/index.php');
                 }
             } else {
-                $error_msg = "Sai tên đăng nhập hoặc mật khẩu!";
+                set_flash_message('Mật khẩu không chính xác!', 'error');
             }
-            $stmt->close();
         } else {
-            $error_msg = "Lỗi hệ thống, vui lòng thử lại sau.";
+            set_flash_message('Tên đăng nhập không tồn tại!', 'error');
         }
     }
-    $conn->close();
 }
 ?>
 
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng nhập | Expense Tracker</title>
     <link rel="stylesheet" href="../../assets/css/login.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="../../assets/css/toast.css">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Barlow:wght@600&display=swap" rel="stylesheet">
 </head>
 <body>
     <div id="main">
-        <!-- LOGO MỚI Ở ĐÂY -->
         <div id="logo">
             <a href="../../index.php" class="logo-text">ExpenseTracker</a>
         </div>
         
         <div id="loginFrom">
-            <form id="formmain" method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
+            <form id="formmain" method="POST">
                 <div class="form-col">
                     <div class="form-group">
                         <input type="text" id="username" name="username" class="form-control" placeholder="Tên đăng nhập" required>
@@ -93,6 +83,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <div class="form-button">
                         <button type="submit" id="btn-login" class="btn-submit">Đăng nhập</button>
                     </div>
+                    
+                    <div style="margin-top: 15px; font-size: 12px;">
+                        <a href="forgot_password.php" style="color: #0095f6; text-decoration: none;">Quên mật khẩu?</a>
+                    </div>
                 </div>
             </form>
         </div>
@@ -100,52 +94,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             Chưa có tài khoản? <a href="register.php">Đăng ký ngay</a>
         </div>
     </div>
+    
     <div id="toast-container"></div>
+    <script src="../../assets/js/toast.js"></script>
+    <?php display_flash_message(); ?>
 </body>
-
-<script>
-    function showToast(message, type = 'error') {
-        let container = document.getElementById("toast-container");
-        let noti = document.createElement("div");
-        noti.className = "noti";
-        noti.textContent = message;
-
-        if (type === 'success') {
-            noti.style.backgroundColor = '#2ecc71';
-        } else {
-            noti.style.backgroundColor = '#ed4956';
-        }
-
-        container.appendChild(noti);
-
-        setTimeout(function() {
-            noti.classList.add("fadeOut");
-            noti.addEventListener('animationend', function() {
-                noti.remove();
-            });
-        }, 3000);
-    }
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const status = urlParams.get('status');
-    if (status === 'logout_success') {
-        showToast("Đăng xuất thành công!", "success");
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-
-    <?php if (!empty($error_msg)): ?>
-        showToast(<?php echo json_encode($error_msg); ?>, "error");
-    <?php endif; ?>
-
-    document.getElementById("formmain").addEventListener("submit", function(event) {
-        const username = document.getElementById("username").value.trim();
-        const password = document.getElementById("password").value.trim();
-
-        if (username === "" || password === "") {
-            event.preventDefault();
-            showToast('Vui lòng nhập đầy đủ thông tin!', 'error');
-        }
-    });
-</script>
-
 </html>

@@ -9,71 +9,69 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-$message = ''; // Biến lưu thông báo
+$message = '';
 
-// 2. Xử lý khi bấm nút Lưu
+// 2. Xử lý lưu
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $full_name = trim($_POST['full_name']);
     $email = trim($_POST['email']);
 
-    // Validate cơ bản
     if (empty($full_name) || empty($email)) {
-        $message = '<div style="color: red;">Vui lòng không để trống thông tin!</div>';
+        $message = '<div style="color: red; margin-bottom: 15px;">Vui lòng điền đủ thông tin!</div>';
     } else {
-        // Cập nhật vào Database
-        $sql = "UPDATE users SET full_name = ?, email = ? WHERE id = ?";
-        $stmt = $conn->prepare($sql);
+        $stmt = $conn->prepare("UPDATE users SET full_name = ?, email = ? WHERE id = ?");
         $stmt->bind_param("ssi", $full_name, $email, $user_id);
         
         if ($stmt->execute()) {
-            // Cập nhật lại Session tên mới để hiển thị ngay trên Menu
-            $_SESSION['full_name'] = $full_name;
-            
-            // Chuyển hướng về trang Profile
-            header("Location: profile.php");
+            $_SESSION['full_name'] = $full_name; // Cập nhật session
+            header("Location: profile.php"); // Quay về trang profile
             exit();
         } else {
-            $message = '<div style="color: red;">Lỗi hệ thống: ' . $conn->error . '</div>';
+            $message = '<div style="color: red;">Lỗi: ' . $conn->error . '</div>';
         }
     }
 }
 
-// 3. Lấy thông tin cũ để điền vào form
-$sql = "SELECT * FROM users WHERE id = $user_id";
-$user = $conn->query($sql)->fetch_assoc();
+// 3. Lấy data cũ
+$user = $conn->query("SELECT * FROM users WHERE id = $user_id")->fetch_assoc();
 
-// 4. Include Header
 include '../../includes/header.php';
 ?>
-<link rel="stylesheet" href="../../assets/css/user_edit.css">
-<div class="edit-profile-wrapper">
-    <h2 style="text-align: center; margin-bottom: 25px; color: #333;">Cập nhật hồ sơ</h2>
-    
-    <?php echo $message; ?>
 
-    <form method="POST">
-        <!-- Username không được sửa -->
-        <div class="form-group">
-            <label class="form-label">Tên đăng nhập:</label>
-            <input type="text" class="form-control" value="<?php echo htmlspecialchars($user['username']); ?>" disabled>
-            <small style="color: #999;">Bạn không thể thay đổi tên đăng nhập.</small>
-        </div>
+<div style="max-width: 500px; margin: 0 auto;">
+    <!-- Nút quay lại -->
+    <a href="profile.php" style="display: inline-flex; align-items: center; gap: 5px; color: #64748b; text-decoration: none; margin-bottom: 20px; font-weight: 600;">
+        <span>←</span> Quay lại Hồ sơ
+    </a>
 
-        <div class="form-group">
-            <label class="form-label">Họ và tên:</label>
-            <input type="text" name="full_name" class="form-control" value="<?php echo htmlspecialchars($user['full_name']); ?>" required>
-        </div>
+    <div class="card">
+        <h2 style="margin-top: 0; text-align: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px;">
+            ✏️ Cập nhật thông tin
+        </h2>
+        
+        <?php echo $message; ?>
 
-        <div class="form-group">
-            <label class="form-label">Email:</label>
-            <input type="email" name="email" class="form-control" value="<?php echo htmlspecialchars($user['email']); ?>" required>
-        </div>
+        <form method="POST">
+            <div class="form-group">
+                <label class="form-label">Tên đăng nhập</label>
+                <input type="text" class="form-control" value="<?php echo htmlspecialchars($user['username']); ?>" disabled style="background: #f9fafb; color: #9ca3af;">
+            </div>
 
-        <div class="btn-group">
-            <button type="submit" class="btn btn-save">Lưu thay đổi</button>
-            <a href="profile.php" class="btn btn-cancel">Hủy bỏ</a>
-        </div>
-    </form>
+            <div class="form-group">
+                <label class="form-label">Họ và tên</label>
+                <input type="text" name="full_name" class="form-control" value="<?php echo htmlspecialchars($user['full_name']); ?>" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control" value="<?php echo htmlspecialchars($user['email']); ?>" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">
+                Lưu Thay Đổi
+            </button>
+        </form>
+    </div>
 </div>
 
 <?php include '../../includes/footer.php'; ?>

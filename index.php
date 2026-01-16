@@ -2,300 +2,318 @@
 session_start();
 require_once 'config/db.php';
 
-// =========================================================================
-// PHẦN 1: ĐÃ ĐĂNG NHẬP
-// =========================================================================
-if (isset($_SESSION['user_id'])) {
-
-    include 'includes/header.php';
-
-    $user_id = $_SESSION['user_id'];
-
-    // 1. Lấy tổng số dư
-    $sql_balance = "SELECT SUM(balance) as total FROM wallets WHERE user_id = $user_id";
-    $result = $conn->query($sql_balance);
-    $total_balance = $result->fetch_assoc()['total'] ?? 0;
-
-    // 2. Tính thu/chi tháng này
-    $sql_income = "SELECT SUM(amount) as total FROM transactions t JOIN categories c ON t.category_id = c.id WHERE t.user_id = $user_id AND c.type = 'income' AND MONTH(transaction_date) = MONTH(CURRENT_DATE())";
-    $income = $conn->query($sql_income)->fetch_assoc()['total'] ?? 0;
-
-    $sql_expense = "SELECT SUM(amount) as total FROM transactions t JOIN categories c ON t.category_id = c.id WHERE t.user_id = $user_id AND c.type = 'expense' AND MONTH(transaction_date) = MONTH(CURRENT_DATE())";
-    $expense = $conn->query($sql_expense)->fetch_assoc()['total'] ?? 0;
-
-    // 3. LẤY DỮ LIỆU VẼ BIỂU ĐỒ (Chỉ lấy các khoản CHI trong tháng này)
-    // Cần lấy: Tên danh mục, Tổng tiền, Mã màu
-    $sql_chart = "SELECT c.name, SUM(t.amount) as total, c.color 
-                  FROM transactions t 
-                  JOIN categories c ON t.category_id = c.id 
-                  WHERE t.user_id = $user_id 
-                  AND c.type = 'expense' 
-                  AND MONTH(t.transaction_date) = MONTH(CURRENT_DATE())
-                  GROUP BY c.id";
-    $result_chart = $conn->query($sql_chart);
-
-    $labels = [];
-    $data = [];
-    $colors = [];
-
-    if ($result_chart->num_rows > 0) {
-        while ($row = $result_chart->fetch_assoc()) {
-            $labels[] = $row['name'];
-            $data[] = $row['total'];
-            // Nếu danh mục chưa có màu, dùng màu mặc định xám
-            $colors[] = !empty($row['color']) ? $row['color'] : '#cccccc';
-        }
-    } else {
-        $labels = ['Chưa có chi tiêu'];
-        $data = [1];
-        $colors = ['#e0e0e0'];
-    }
-?>
-    <!-- Thêm thư viện Chart.js từ CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="./assets/css/style.css">
-    <div class="welcome-text">
-        <h2>Xin chào, <?php echo $_SESSION['full_name']; ?>! 👋</h2>
-        <p style="color: #8e8e8e;">Tổng quan tài chính tháng <?php echo date('m/Y'); ?>:</p>
-    </div>
-
-    <!-- 3 Ô Thống Kê -->
-    <div class="dashboard-container">
-        <div class="card">
-            <h3>Tổng tài sản hiện có</h3>
-            <div class="money" style="color: #0095f6;"><?php echo number_format($total_balance); ?> đ</div>
-            <div style="margin-top: 10px; font-size: 13px;">
-                <a href="modules/wallets/index.php" style="text-decoration: none; color: #0095f6;">Quản lý ví tiền &rarr;</a>
-            </div>
-        </div>
-        <div class="card">
-            <h3>Thu nhập tháng này</h3>
-            <div class="money" style="color: #2ecc71;">+<?php echo number_format($income); ?> đ</div>
-        </div>
-        <div class="card">
-            <h3>Đã chi tiêu tháng này</h3>
-            <div class="money" style="color: #ed4956;">-<?php echo number_format($expense); ?> đ</div>
-        </div>
-    </div>
-
-    <!-- PHẦN BIỂU ĐỒ MỚI -->
-    <div class="chart-section">
-
-        <!-- Cột 1: Biểu đồ tròn -->
-        <div class="chart-box">
-            <h3 style="margin-bottom: 20px; color: #555;">Cơ cấu chi tiêu tháng này</h3>
-            <div class="chart-container">
-                <canvas id="expenseChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Cột 2: Chi tiết danh sách -->
-        <div class="chart-box">
-            <h3 style="margin-bottom: 20px; color: #555;">Chi tiết theo danh mục</h3>
-            <div class="chart-legend">
-                <?php if ($result_chart->num_rows > 0):
-                    // Reset con trỏ dữ liệu về đầu để lặp lại
-                    $result_chart->data_seek(0);
-                    while ($row = $result_chart->fetch_assoc()):
-                ?>
-                        <div class="legend-item">
-                            <span style="display: flex; align-items: center;">
-                                <span style="display:block; width:12px; height:12px; background-color: <?php echo $row['color']; ?>; margin-right:10px; border-radius:50%;"></span>
-                                <?php echo $row['name']; ?>
-                            </span>
-                            <span style="font-weight: bold;"><?php echo number_format($row['total']); ?> đ</span>
-                        </div>
-                    <?php endwhile;
-                else: ?>
-                    <p style="text-align: center; color: #999;">Chưa có dữ liệu chi tiêu tháng này.</p>
-                <?php endif; ?>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="card">
-        <h3>Thao tác nhanh</h3>
-        <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
-            <a href="modules/transactions/user_add.php" style="background: #0095f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">+ Thêm Giao dịch</a>
-            <a href="modules/wallets/create.php" style="background: #efefef; color: #262626; padding: 10px 20px; text-decoration: none; border-radius: 4px;">+ Tạo Ví mới</a>
-            <a href="modules/transactions/user_history.php" style="background: #efefef; color: #262626; padding: 10px 20px; text-decoration: none; border-radius: 4px;">📜 Xem Lịch sử</a>
-        </div>
-    </div>
-
-    <!-- Script Vẽ Biểu Đồ -->
-    <script>
-        const ctx = document.getElementById('expenseChart').getContext('2d');
-
-        const chartData = {
-            labels: <?php echo json_encode($labels); ?>,
-            datasets: [{
-                data: <?php echo json_encode($data); ?>,
-                backgroundColor: <?php echo json_encode($colors); ?>,
-                borderWidth: 0
-            }]
-        };
-
-        new Chart(ctx, {
-            type: 'doughnut', // Loại biểu đồ vành khuyên (tròn rỗng giữa) nhìn đẹp hơn pie
-            data: chartData,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false // Ẩn chú thích mặc định của Chartjs để dùng chú thích HTML bên cạnh
-                    }
-                }
-            }
-        });
-    </script>
-
-<?php
-    include 'includes/footer.php';
-    exit(); // Dừng code tại đây nếu đã đăng nhập
+// 1. Check Login
+if (!isset($_SESSION['user_id'])) {
+    include 'includes/landing_page_content.php';
+    exit();
 }
+
+$user_id = $_SESSION['user_id'];
+
+// --- BỘ LỌC THỜI GIAN ---
+// Mặc định là tháng hiện tại
+$current_month_str = isset($_GET['month']) ? $_GET['month'] : date('Y-m'); 
+$cur_m = date('m', strtotime($current_month_str));
+$cur_y = date('Y', strtotime($current_month_str));
+
+// Tháng trước để so sánh
+$prev_month_str = date('Y-m', strtotime($current_month_str . " -1 month"));
+$prev_m = date('m', strtotime($prev_month_str));
+$prev_y = date('Y', strtotime($prev_month_str));
+
+include 'includes/header.php';
+
+// =========================================================================
+// PHẦN 1: TRUY VẤN DỮ LIỆU (DATA FETCHING)
+// =========================================================================
+
+// Hàm lấy tổng tiền theo tháng (Fix lỗi: chỉ lấy của user_id hiện tại)
+function get_total_by_month($conn, $uid, $month, $year, $type) {
+    $sql = "SELECT SUM(t.amount) as total 
+            FROM transactions t 
+            JOIN categories c ON t.category_id = c.id 
+            WHERE t.user_id = ? AND c.type = ? 
+            AND MONTH(t.transaction_date) = ? AND YEAR(t.transaction_date) = ?";
+            
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("isii", $uid, $type, $month, $year);
+    $stmt->execute();
+    return $stmt->get_result()->fetch_assoc()['total'] ?? 0;
+}
+
+// 1. Số liệu Thẻ Thống Kê (Stats Cards)
+$income_cur = get_total_by_month($conn, $user_id, $cur_m, $cur_y, 'income');
+$expense_cur = get_total_by_month($conn, $user_id, $cur_m, $cur_y, 'expense');
+
+$income_prev = get_total_by_month($conn, $user_id, $prev_m, $prev_y, 'income');
+$expense_prev = get_total_by_month($conn, $user_id, $prev_m, $prev_y, 'expense');
+
+// Tính % Tăng trưởng Chi tiêu
+$growth_percent = 0;
+$growth_class = 'text-muted'; // Mặc định màu xám
+$growth_text = 'Không đổi';
+
+if ($expense_prev > 0) {
+    $growth_percent = (($expense_cur - $expense_prev) / $expense_prev) * 100;
+} elseif ($expense_cur > 0) {
+    $growth_percent = 100; 
+}
+
+if ($growth_percent > 0) {
+    $growth_text = "⬆️ Tăng " . round($growth_percent, 1) . "%";
+    $growth_class = "text-danger"; // Đỏ
+} elseif ($growth_percent < 0) {
+    $growth_text = "⬇️ Giảm " . abs(round($growth_percent, 1)) . "%";
+    $growth_class = "text-success"; // Xanh
+}
+
+// Tổng tài sản (Số dư các ví)
+$balance_sql = "SELECT SUM(balance) as t FROM wallets WHERE user_id = ?";
+$stmt_b = $conn->prepare($balance_sql);
+$stmt_b->bind_param("i", $user_id);
+$stmt_b->execute();
+$balance = $stmt_b->get_result()->fetch_assoc()['t'] ?? 0;
+
+
+// 2. Dữ liệu Pie Chart: Cơ cấu Chi tiêu (CÓ LẤY MÀU)
+$sql_pie_exp = "SELECT c.name, c.color, SUM(t.amount) as total 
+                FROM transactions t JOIN categories c ON t.category_id = c.id 
+                WHERE t.user_id = $user_id AND c.type = 'expense' 
+                AND MONTH(t.transaction_date) = $cur_m AND YEAR(t.transaction_date) = $cur_y
+                GROUP BY c.name, c.color ORDER BY total DESC";
+$res_pie_exp = $conn->query($sql_pie_exp);
+$pie_exp_labels = [];
+$pie_exp_data = [];
+$pie_exp_colors = []; // Mảng màu
+while($row = $res_pie_exp->fetch_assoc()) { 
+    $pie_exp_labels[] = $row['name']; 
+    $pie_exp_data[] = $row['total'];
+    $pie_exp_colors[] = $row['color']; // Lấy màu từ DB
+}
+
+// 3. Dữ liệu Pie Chart: Cơ cấu Thu nhập (CÓ LẤY MÀU)
+$sql_pie_inc = "SELECT c.name, c.color, SUM(t.amount) as total 
+                FROM transactions t JOIN categories c ON t.category_id = c.id 
+                WHERE t.user_id = $user_id AND c.type = 'income' 
+                AND MONTH(t.transaction_date) = $cur_m AND YEAR(t.transaction_date) = $cur_y
+                GROUP BY c.name, c.color ORDER BY total DESC";
+$res_pie_inc = $conn->query($sql_pie_inc);
+$pie_inc_labels = [];
+$pie_inc_data = [];
+$pie_inc_colors = []; // Mảng màu
+while($row = $res_pie_inc->fetch_assoc()) { 
+    $pie_inc_labels[] = $row['name']; 
+    $pie_inc_data[] = $row['total'];
+    $pie_inc_colors[] = $row['color']; // Lấy màu từ DB
+}
+
+// 4. Dữ liệu Bar Chart: Lịch sử 6 tháng
+$bar_labels = [];
+$bar_income = [];
+$bar_expense = [];
+for ($i = 5; $i >= 0; $i--) {
+    $time = strtotime("-$i months");
+    $m = date('m', $time); $y = date('Y', $time);
+    $bar_labels[] = "T$m";
+    $bar_income[] = get_total_by_month($conn, $user_id, $m, $y, 'income');
+    $bar_expense[] = get_total_by_month($conn, $user_id, $m, $y, 'expense');
+}
+
+// 5. Dữ liệu Line Chart: Xu hướng theo ngày
+$days_in_month = cal_days_in_month(CAL_GREGORIAN, $cur_m, $cur_y);
+$days = range(1, $days_in_month);
+$line_cur_data = array_fill(0, $days_in_month, 0);
+
+$sql_line = "SELECT DAY(t.transaction_date) as d, SUM(t.amount) as total 
+             FROM transactions t JOIN categories c ON t.category_id = c.id 
+             WHERE t.user_id=$user_id AND c.type='expense' AND MONTH(t.transaction_date)=$cur_m AND YEAR(t.transaction_date)=$cur_y 
+             GROUP BY d";
+$res_line = $conn->query($sql_line);
+while($row = $res_line->fetch_assoc()) { $line_cur_data[$row['d'] - 1] = $row['total']; }
 ?>
-<!-- ========================================================================= -->
-<!-- PHẦN 2: CHƯA ĐĂNG NHẬP -> HIỆN TRANG GIỚI THIỆU (Tiếng Việt) -->
-<!-- ========================================================================= -->
-<!DOCTYPE html>
-<html lang="vi">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" sizes="32x32" href="./images/favicon-32x32.png">
-    <title>Quản lý tài chính - Nhóm phát triển</title>
-    <link rel="stylesheet" href="./assets/css/style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,700,100,1;1,9..144,700,100,1&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@600&display=swap" rel="stylesheet">
-</head>
+<!-- HEADER DASHBOARD -->
+<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
+    <div>
+        <h2 style="margin: 0;">Dashboard Tài Chính</h2>
+        <p class="text-muted" style="margin-top: 5px;">Thống kê tháng <b><?php echo "$cur_m/$cur_y"; ?></b></p>
+    </div>
+    
+    <form method="GET" style="display: flex; align-items: center; gap: 10px; background: white; padding: 5px 10px; border-radius: 8px; border: 1px solid #dbdbdb;">
+        <label style="font-weight: 600; font-size: 13px; color: #555;">Tháng:</label>
+        <input type="month" name="month" value="<?php echo $current_month_str; ?>" onchange="this.form.submit()" style="border: none; outline: none; font-family: inherit; color: #333; cursor: pointer;">
+    </form>
+</div>
 
-<body>
-    <div id="main">
-        <div id="header">
-            <div id="nav">
-                <div class="nav logo">
-                    <div class="img-logo">
-                        <a href="#" class="logo-text">ExpenseTracker</a>
-                    </div>
-                    <ul class="nav menu">
-                        <li class="nav-item-1"><a href="#">Giới thiệu</a></li>
-                        <li class="nav-item-2"><a href="#content">Tính năng</a></li>
-                        <li class="nav-item-3"><a href="#team-section">Nhóm</a></li>
-                        <li class="nav-item-4"><a href="modules/auth/login.php">Login</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="intro">
-                <div class="intro-text">Quản lý tài chính</div>
-            </div>
-        </div>
-
-        <div id="content">
-            <div class="content item-1">
-                <div class="text-1">
-                    <h3>Kiểm soát dòng tiền</h3>
-                    <p>Ghi chép thu chi hàng ngày một cách nhanh chóng. Giúp bạn phân loại các khoản chi tiêu để biết chính xác tiền của mình đi đâu về đâu.</p>
-                    <h4><a href="modules/auth/login.php" style="text-decoration: none; color: inherit;">Đăng nhập ngay</a></h4>
-                </div>
-            </div>
-
-            <div class="content item-2">
-                <img class="img-content" src="./assets/images/content-1" alt="Finance">
-            </div>
-
-            <div class="content item-3">
-                <img class="img-content" src="./assets/images/content-2" alt="Saving">
-            </div>
-
-            <div class="content item-4">
-                <div class="text-1">
-                    <h3>Tiết kiệm tương lai</h3>
-                    <p>Đặt hạn mức chi tiêu cho từng danh mục (Ăn uống, Mua sắm...). Hệ thống sẽ cảnh báo khi bạn tiêu quá tay để đảm bảo kế hoạch tiết kiệm.</p>
-                    <h4><a href="modules/auth/register.php" style="text-decoration: none; color: inherit;">Đăng ký ngay</a></h4>
-                </div>
-            </div>
-
-            <div class="content item-5">
-                <div class="text-2 graphic">
-                    <h4>Đa nền tảng</h4>
-                    <p>Đồng bộ dữ liệu trên mọi thiết bị: Điện thoại, Máy tính bảng và Website.</p>
-                </div>
-            </div>
-
-            <div class="content item-6">
-                <div class="text-2 photography">
-                    <h4>Báo cáo trực quan</h4>
-                    <p>Xem biểu đồ thống kê chi tiết theo tuần, tháng để đưa ra quyết định đúng đắn.</p>
-                </div>
-            </div>
+<!-- 1. STATS CARDS -->
+<div class="stats-grid">
+    <!-- Tổng Tài Sản -->
+    <div class="stat-card">
+        <div class="stat-icon" style="background: #eff6ff; color: #3b82f6;">💰</div>
+        <div>
+            <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Tổng Tài Sản</div>
+            <div class="stat-value text-primary"><?php echo number_format($balance); ?> đ</div>
+            <div class="stat-sub text-muted">Tất cả các ví</div>
         </div>
     </div>
 
-    <div id="team-section">
-        <h3>Đội ngũ phát triển</h3>
-
-        <div class="team-container">
-            <div class="team-member">
-                <img src="https://ui-avatars.com/api/?name=Dam+Dinh+Long&background=60c5a8&color=fff&size=128" alt="Long">
-                <div class="member-info">
-                    <h5>Đàm Đình Long</h5>
-                    <h6>Thành viên nhóm</h6>
-                </div>
-            </div>
-
-            <div class="team-member">
-                <img src="https://ui-avatars.com/api/?name=Do+Thi+Thuy+Quynh&background=ffbc66&color=fff&size=128" alt="Quynh">
-                <div class="member-info">
-                    <h5>Đỗ Thị Thuý Quỳnh</h5>
-                    <h6>Thành viên nhóm</h6>
-                </div>
-            </div>
-
-            <div class="team-member leader">
-                <img src="https://ui-avatars.com/api/?name=Nguyen+Ha+Duc+Viet&background=fe7867&color=fff&size=128" alt="Viet">
-                <div class="member-info">
-                    <h5>Nguyễn Hà Đức Việt</h5>
-                    <h6>Trưởng nhóm</h6>
-                </div>
-            </div>
-
-            <div class="team-member">
-                <img src="https://ui-avatars.com/api/?name=Trinh+Dang+Quang&background=60c5a8&color=fff&size=128" alt="Quang">
-                <div class="member-info">
-                    <h5>Trịnh Đăng Quang</h5>
-                    <h6>Thành viên nhóm</h6>
-                </div>
-            </div>
-
-            <div class="team-member">
-                <img src="https://ui-avatars.com/api/?name=Le+Van+Tuan&background=ffbc66&color=fff&size=128" alt="Tuan">
-                <div class="member-info">
-                    <h5>Lê Văn Tuấn</h5>
-                    <h6>Thành viên nhóm</h6>
-                </div>
-            </div>
+    <!-- Thu Nhập -->
+    <div class="stat-card">
+        <div class="stat-icon" style="background: #dcfce7; color: #166534;">⬇️</div>
+        <div>
+            <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Thu Nhập</div>
+            <div class="stat-value text-success">+<?php echo number_format($income_cur); ?> đ</div>
+            <div class="stat-sub text-muted">Tháng trước: <?php echo number_format($income_prev); ?> đ</div>
         </div>
     </div>
 
-    <footer>
-        <a href="#" class="footer-logo">ExpenseTracker</a>
-
-        <div class="footer-nav">
-            <a href="modules/auth/login.php">Đăng nhập</a>
-            <span>|</span>
-            <a href="modules/auth/register.php">Đăng ký</a>
+    <!-- Chi Tiêu -->
+    <div class="stat-card">
+        <div class="stat-icon" style="background: #fee2e2; color: #991b1b;">⬆️</div>
+        <div>
+            <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Chi Tiêu</div>
+            <div class="stat-value text-danger">-<?php echo number_format($expense_cur); ?> đ</div>
+            <div class="stat-sub <?php echo $growth_class; ?>"><?php echo $growth_text; ?> so với tháng trước</div>
         </div>
+    </div>
+</div>
 
-        <div class="footer-copyright">
-            &copy; 2025 Expense Tracker
+<!-- 2. BIỂU ĐỒ TRÒN (PIE) -->
+<div style="display: flex; gap: 24px; margin-bottom: 24px; flex-wrap: wrap;">
+    <!-- Pie: Chi tiêu -->
+    <div class="card" style="flex: 1; min-width: 300px;">
+        <h3 style="margin-top: 0; text-align: center;">💸 Cơ cấu Chi Tiêu</h3>
+        <div class="chart-wrapper">
+            <canvas id="pieExpense"></canvas>
         </div>
-    </footer>
+        <?php if(empty($pie_exp_data)) echo "<p style='text-align:center;color:#999;font-size:13px;margin-top:10px;'>Chưa có dữ liệu chi tiêu tháng này.</p>"; ?>
+    </div>
 
-</body>
+    <!-- Pie: Thu nhập -->
+    <div class="card" style="flex: 1; min-width: 300px;">
+        <h3 style="margin-top: 0; text-align: center;">💰 Cơ cấu Thu Nhập</h3>
+        <div class="chart-wrapper">
+            <canvas id="pieIncome"></canvas>
+        </div>
+        <?php if(empty($pie_inc_data)) echo "<p style='text-align:center;color:#999;font-size:13px;margin-top:10px;'>Chưa có dữ liệu thu nhập tháng này.</p>"; ?>
+    </div>
+</div>
 
-</html>
+<!-- 3. BIỂU ĐỒ CỘT & ĐƯỜNG -->
+<div style="display: flex; gap: 24px; flex-wrap: wrap;">
+    <!-- Bar: Lịch sử 6 tháng -->
+    <div class="card" style="flex: 1; min-width: 400px;">
+        <h3 style="margin-top: 0;">📊 Thu vs Chi (6 tháng gần nhất)</h3>
+        <div class="chart-wrapper">
+            <canvas id="barHistory"></canvas>
+        </div>
+    </div>
+
+    <!-- Line: Xu hướng ngày -->
+    <div class="card" style="flex: 1; min-width: 400px;">
+        <h3 style="margin-top: 0;">📈 Xu hướng chi tiêu theo ngày</h3>
+        <div class="chart-wrapper">
+            <canvas id="lineTrend"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- JAVASCRIPT CHART -->
+<script>
+    // Config chung cho font chữ đẹp hơn
+    Chart.defaults.font.family = "'Barlow', sans-serif";
+    Chart.defaults.color = '#64748b';
+
+    // 1. PIE EXPENSE
+    <?php if(!empty($pie_exp_data)): ?>
+    new Chart(document.getElementById('pieExpense'), {
+        type: 'doughnut',
+        data: {
+            labels: <?php echo json_encode($pie_exp_labels); ?>,
+            datasets: [{
+                data: <?php echo json_encode($pie_exp_data); ?>,
+                backgroundColor: <?php echo json_encode($pie_exp_colors); ?>, // DÙNG MÀU CỦA DANH MỤC
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: { maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } } }
+    });
+    <?php endif; ?>
+
+    // 2. PIE INCOME
+    <?php if(!empty($pie_inc_data)): ?>
+    new Chart(document.getElementById('pieIncome'), {
+        type: 'doughnut',
+        data: {
+            labels: <?php echo json_encode($pie_inc_labels); ?>,
+            datasets: [{
+                data: <?php echo json_encode($pie_inc_data); ?>,
+                backgroundColor: <?php echo json_encode($pie_inc_colors); ?>, // DÙNG MÀU CỦA DANH MỤC
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: { maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } } }
+    });
+    <?php endif; ?>
+
+    // 3. BAR HISTORY
+    new Chart(document.getElementById('barHistory'), {
+        type: 'bar',
+        data: {
+            labels: <?php echo json_encode($bar_labels); ?>,
+            datasets: [
+                {
+                    label: 'Thu',
+                    data: <?php echo json_encode($bar_income); ?>,
+                    backgroundColor: '#10b981',
+                    borderRadius: 4,
+                    barPercentage: 0.6
+                },
+                {
+                    label: 'Chi',
+                    data: <?php echo json_encode($bar_expense); ?>,
+                    backgroundColor: '#ef4444',
+                    borderRadius: 4,
+                    barPercentage: 0.6
+                }
+            ]
+        },
+        options: {
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } },
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+
+    // 4. LINE TREND
+    new Chart(document.getElementById('lineTrend'), {
+        type: 'line',
+        data: {
+            labels: <?php echo json_encode($days); ?>,
+            datasets: [{
+                label: 'Chi tiêu (VNĐ)',
+                data: <?php echo json_encode($line_cur_data); ?>,
+                borderColor: '#0095f6',
+                backgroundColor: 'rgba(0, 149, 246, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4, // Đường cong mềm mại
+                pointRadius: 2,
+                pointHoverRadius: 5
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            scales: { 
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                x: { grid: { display: false }, title: { display: true, text: 'Ngày' } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+</script>
+
+<?php include 'includes/footer.php'; ?>
