@@ -1,0 +1,110 @@
+/* d:\xampp\htdocs\expense-tracker\assets\css\transaction_index.css */
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.page-header h2 {
+    margin: 0;
+}
+
+.page-header p {
+    color: #64748b;
+    margin-top: 5px;
+}
+
+.filter-card {
+    padding: 20px;
+    background: #fff;
+    margin-bottom: 20px; /* Add margin to separate from table */
+}
+
+.filter-form {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.filter-group {
+    flex: 1;
+    min-width: 150px;
+}
+
+.filter-label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #64748b;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.filter-control {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px; /* Add gap for buttons */
+}
+
+.btn-filter {
+    height: 38px;
+}
+
+.btn-reset {
+    background: #f1f5f9;
+    color: #333;
+    height: 38px;
+}
+
+.table-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+.date-display {
+    font-weight: 600;
+    color: #334155;
+}
+
+.transaction-note {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+.amount-income {
+    color: #16a34a;
+    font-weight: 700;
+}
+
+.amount-expense {
+    color: #dc2626;
+    font-weight: 700;
+}
+
+.action-link {
+    text-decoration: none;
+    margin-right: 15px;
+}
+
+.action-view {
+    color: #3b82f6;
+}
+
+.action-delete {
+    color: #ef4444;
+}
+
+.empty-state td {
+    text-align: center;
+    padding: 40px;
+    color: #94a3b8;
+}

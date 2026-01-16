@@ -23,7 +23,7 @@ if ($filter_wallet > 0) $sql .= " AND t.wallet_id = $filter_wallet";
 if (!empty($from_date)) $sql .= " AND t.transaction_date >= '$from_date'";
 if (!empty($to_date))   $sql .= " AND t.transaction_date <= '$to_date'";
 
-$sql .= " ORDER BY t.transaction_date DESC, t.id DESC";
+$sql .= " ORDER BY t    .transaction_date DESC, t.id DESC";
 $result = $conn->query($sql);
 
 // Lấy danh sách để fill vào dropdown filter
@@ -33,10 +33,12 @@ $wallets = $conn->query("SELECT * FROM wallets WHERE user_id = $user_id");
 include '../../includes/header.php';
 ?>
 
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+<link rel="stylesheet" href="../../assets/css/transaction_index.css">
+
+<div class="page-header">
     <div>
-        <h2 style="margin: 0;">Sổ Giao dịch</h2>
-        <p style="color: #64748b; margin-top: 5px;">Xem lại lịch sử thu chi chi tiết.</p>
+        <h2>Sổ Giao dịch</h2>
+        <p>Xem lại lịch sử thu chi chi tiết.</p>
     </div>
     <a href="create.php" class="btn btn-primary">
         <span>📸</span> Thêm Giao dịch
@@ -44,19 +46,19 @@ include '../../includes/header.php';
 </div>
 
 <!-- KHUNG BỘ LỌC -->
-<div class="card" style="padding: 20px; background: #fff;">
-    <form method="GET" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
-        <div style="flex: 1; min-width: 150px;">
-            <label style="font-size: 12px; font-weight: bold; color: #64748b; display: block; margin-bottom: 5px;">Từ ngày</label>
-            <input type="date" name="from" value="<?php echo $from_date; ?>" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+<div class="card filter-card">
+    <form method="GET" class="filter-form">
+        <div class="filter-group">
+            <label class="filter-label">Từ ngày</label>
+            <input type="date" name="from" value="<?php echo $from_date; ?>" class="filter-control">
         </div>
-        <div style="flex: 1; min-width: 150px;">
-            <label style="font-size: 12px; font-weight: bold; color: #64748b; display: block; margin-bottom: 5px;">Đến ngày</label>
-            <input type="date" name="to" value="<?php echo $to_date; ?>" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+        <div class="filter-group">
+            <label class="filter-label">Đến ngày</label>
+            <input type="date" name="to" value="<?php echo $to_date; ?>" class="filter-control">
         </div>
-        <div style="flex: 1; min-width: 150px;">
-            <label style="font-size: 12px; font-weight: bold; color: #64748b; display: block; margin-bottom: 5px;">Danh mục</label>
-            <select name="cat" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+        <div class="filter-group">
+            <label class="filter-label">Danh mục</label>
+            <select name="cat" class="filter-control">
                 <option value="0">-- Tất cả --</option>
                 <?php while ($c = $cats->fetch_assoc()): ?>
                     <option value="<?php echo $c['id']; ?>" <?php if ($filter_cat == $c['id']) echo 'selected'; ?>>
@@ -65,9 +67,9 @@ include '../../includes/header.php';
                 <?php endwhile; ?>
             </select>
         </div>
-        <div style="flex: 1; min-width: 150px;">
-            <label style="font-size: 12px; font-weight: bold; color: #64748b; display: block; margin-bottom: 5px;">Ví</label>
-            <select name="wallet" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+        <div class="filter-group">
+            <label class="filter-label">Ví</label>
+            <select name="wallet" class="filter-control">
                 <option value="0">-- Tất cả --</option>
                 <?php while ($w = $wallets->fetch_assoc()): ?>
                     <option value="<?php echo $w['id']; ?>" <?php if ($filter_wallet == $w['id']) echo 'selected'; ?>>
@@ -76,13 +78,15 @@ include '../../includes/header.php';
                 <?php endwhile; ?>
             </select>
         </div>
-        <button type="submit" class="btn btn-primary" style="height: 38px;">Lọc</button>
-        <a href="index.php" class="btn" style="background: #f1f5f9; color: #333; height: 38px;">Đặt lại</a>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary btn-filter">Lọc</button>
+            <a href="index.php" class="btn btn-reset btn-filter">Đặt lại</a>
+        </div>
     </form>
 </div>
 
 <!-- BẢNG GIAO DỊCH -->
-<div class="card" style="padding: 0; overflow: hidden;">
+<div class="card table-card">
     <table class="custom-table">
         <thead>
             <tr>
@@ -98,7 +102,7 @@ include '../../includes/header.php';
                 <?php while ($row = $result->fetch_assoc()): ?>
                     <tr>
                         <td>
-                            <div style="font-weight: 600; color: #334155;"><?php echo date('d/m/Y', strtotime($row['transaction_date'])); ?></div>
+                            <div class="date-display"><?php echo date('d/m/Y', strtotime($row['transaction_date'])); ?></div>
                             <!-- Logic để hiện "Hôm nay" hoặc "Hôm qua" nếu muốn -->
                         </td>
                         <td>
@@ -106,26 +110,26 @@ include '../../includes/header.php';
                                 <?php echo htmlspecialchars($row['cat_name']); ?>
                             </span>
                             <?php if (!empty($row['note'])): ?>
-                                <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;"><?php echo htmlspecialchars($row['note']); ?></div>
+                                <div class="transaction-note"><?php echo htmlspecialchars($row['note']); ?></div>
                             <?php endif; ?>
                         </td>
                         <td><?php echo htmlspecialchars($row['wallet_name']); ?></td>
                         <td>
                             <?php if ($row['cat_type'] == 'income'): ?>
-                                <span style="color: #16a34a; font-weight: 700;">+<?php echo number_format($row['amount']); ?> đ</span>
+                                <span class="amount-income">+<?php echo number_format($row['amount']); ?> đ</span>
                             <?php else: ?>
-                                <span style="color: #dc2626; font-weight: 700;">-<?php echo number_format($row['amount']); ?> đ</span>
+                                <span class="amount-expense">-<?php echo number_format($row['amount']); ?> đ</span>
                             <?php endif; ?>
                         </td>
                         <td>
-                            <a href="view.php?id=<?php echo $row['id']; ?>" title="Xem chi tiết" style="text-decoration: none; color: #3b82f6; margin-right: 15px;">👁️ Xem</a>
-                            <a href="delete.php?id=<?php echo $row['id']; ?>" title="Xóa giao dịch" style="text-decoration: none; color: #ef4444;" onclick="return confirm('Bạn có chắc muốn xóa giao dịch này? Số dư ví sẽ được cập nhật lại (Rollback).')">❌ Xóa</a>
+                            <a href="view.php?id=<?php echo $row['id']; ?>" title="Xem chi tiết" class="action-link action-view">👁️ Xem</a>
+                            <a href="delete.php?id=<?php echo $row['id']; ?>" title="Xóa giao dịch" class="action-link action-delete" onclick="return confirm('Bạn có chắc muốn xóa giao dịch này? Số dư ví sẽ được cập nhật lại (Rollback).')">❌ Xóa</a>
                         </td>
                     </tr>
                 <?php endwhile; ?>
             <?php else: ?>
-                <tr>
-                    <td colspan="5" style="text-align: center; padding: 40px; color: #94a3b8;">
+                <tr class="empty-state">
+                    <td colspan="5">
                         Không tìm thấy giao dịch nào phù hợp.
                     </td>
                 </tr>

@@ -1,0 +1,255 @@
+/* d:\xampp\htdocs\expense-tracker\assets\css\transaction_create.css */
+
+.create-transaction-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.back-link {
+    text-decoration: none;
+    color: #64748b;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.transaction-layout {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.form-column {
+    flex: 3;
+    min-width: 300px;
+}
+
+.context-column {
+    flex: 2;
+    min-width: 280px;
+}
+
+.form-title {
+    margin-top: 0;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.type-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.type-selector label {
+    flex: 1;
+    cursor: pointer;
+}
+
+.type-selector input[type="radio"] {
+    display: none;
+}
+
+.type-btn {
+    text-align: center;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #64748b;
+    border-radius: 8px;
+    font-weight: bold;
+    transition: all 0.2s ease-in-out;
+}
+
+.type-btn.expense-active {
+    border-color: #ef4444;
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+.type-btn.income-active {
+    border-color: #10b981;
+    background: #d1fae5;
+    color: #059669;
+}
+
+.amount-input {
+    width: 100%;
+    padding: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    outline: none;
+}
+
+.amount-input.expense {
+    color: #ef4444;
+}
+
+.amount-input.income {
+    color: #10b981;
+}
+
+.form-hint {
+    color: #64748b;
+    font-size: 13px;
+}
+
+.grid-2-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.form-label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group-lg {
+    margin-bottom: 30px;
+}
+
+.btn-submit-full {
+    width: 100%;
+    justify-content: center;
+    padding: 15px;
+    font-size: 16px;
+}
+
+/* Context Cards (OCR/QR) */
+.context-card {
+    height: fit-content;
+}
+
+#ocr-card {
+    background: #f0fdf4;
+    border: 1px dashed #4ade80;
+}
+
+#qr-card {
+    display: none;
+    background: #f0f9ff;
+    border: 1px dashed #38bdf8;
+}
+
+.context-title {
+    margin-top: 0;
+    text-align: center;
+}
+
+#ocr-card .context-title { color: #15803d; }
+#qr-card .context-title { color: #0369a1; }
+
+.context-desc {
+    font-size: 13px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+#ocr-card .context-desc { color: #166534; }
+#qr-card .context-desc { color: #075985; }
+
+.ocr-upload-box {
+    display: block;
+    width: 100%;
+    padding: 40px 20px;
+    background: white;
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.2s;
+    text-align: center;
+}
+
+.ocr-upload-box:hover {
+    border-color: #4ade80;
+}
+
+.ocr-upload-box span:first-of-type {
+    font-size: 32px;
+}
+
+.ocr-upload-box span:last-of-type {
+    font-weight: 600;
+    color: #64748b;
+}
+
+#bill_image {
+    display: none;
+}
+
+.ocr-status {
+    margin-top: 15px;
+    font-size: 13px;
+    text-align: center;
+    color: #64748b;
+}
+
+.loading-spinner {
+    display: none;
+    margin-top: 15px;
+    text-align: center;
+}
+
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #cbd5e1;
+    border-top-color: #16a34a;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loading-text {
+    margin-left: 10px;
+    color: #16a34a;
+    font-weight: bold;
+}
+
+.qr-code-image {
+    width: 250px;
+    height: 250px;
+    border-radius: 8px;
+    background: #fff;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.qr-info {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 13px;
+    color: #075985;
+}
+
+.qr-info p {
+    margin: 5px 0;
+}
+
+.qr-info p:last-of-type {
+    font-style: italic;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
