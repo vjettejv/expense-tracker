@@ -89,7 +89,10 @@ include '../../includes/header.php';
             </tr>
         </thead>
         <tbody>
-            <?php while($row = $result->fetch_assoc()): ?>
+            <?php
+            $stt = 1;
+            while($row = $result->fetch_assoc()): 
+            ?>
                 <tr>
                     <td>
                         <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:<?php echo $row['color']; ?>; margin-right:8px; border: 1px solid rgba(0,0,0,0.1);"></span>

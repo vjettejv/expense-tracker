@@ -248,78 +248,112 @@ include '../../includes/header.php';
         const file = e.target.files[0];
         if (!file) return;
 
+        // Reset UI
         statusText.style.display = 'none';
         loading.style.display = 'block';
+        amountInput.value = ''; // Clear cũ
 
         try {
+            // Chạy Tesseract
             const { data } = await Tesseract.recognize(
                 file,
                 'vie', 
                 { logger: m => console.log(m) }
             );
 
-            console.log("OCR Result:", data.text);
+            console.log("OCR Text Raw:", data.text);
             
-            let foundAmount = 0;
-            const keywords = ['tổng cộng', 'thành tiền', 'tổng tiền', 'thanh toán', 'total', 'amount', 'cộng tiền hàng'];
-            const lines = data.lines;
-            const amountCandidates = [];
+        
+            const currencyRegex = /(\d+(?:[.,]\d+)*)\s*(vnd|vnđ|đ|₫|k|d|dong|đồng)/gi;
+            
+            let maxAmount = 0;
+            let matches;
 
-            const extractAmountFromText = (str) => {
-                const matches = str.match(/[\d.,]+/g);
-                if (!matches) return 0;
-                let maxVal = 0;
-                matches.forEach(numStr => {
-                    if (numStr.length < 3 || !/\d/.test(numStr)) return;
-                    const cleanStr = numStr.replace(/[.,]/g, '');
-                    // Lọc SĐT
-                    if (cleanStr.startsWith('0') && cleanStr.length >= 9 && cleanStr.length <= 11) return;
-                    const val = parseInt(cleanStr, 10);
-                    if (isNaN(val)) return;
-                    // Lọc số quá nhỏ/lớn
-                    if (val < 1000 || val > 10000000000) return;
-                    if (val > maxVal) maxVal = val;
-                });
-                return maxVal;
+            // Hàm làm sạch số (Biến '100.000' -> 100000)
+            const parseCleanNumber = (strNum, unit) => {
+                // Loại bỏ tất cả dấu chấm và phẩy để lấy số thô
+                let cleanStr = strNum.replace(/[.,]/g, '');
+                let val = parseInt(cleanStr, 10);
+
+                // Xử lý trường hợp "k" (VD: 50k -> 50000)
+                if (unit.toLowerCase() === 'k') {
+                    val = val * 1000;
+                }
+                return val;
             };
 
-            lines.forEach(line => {
-                const lineText = line.text.toLowerCase().replace(/\s+/g, ' ');
-                for (const keyword of keywords) {
-                    if (lineText.includes(keyword)) {
-                        const amount = extractAmountFromText(line.text);
-                        if (amount > 0) {
-                            amountCandidates.push(amount);
-                        }
-                        break;
+            // Quét toàn bộ văn bản tìm khớp lệnh
+            // match[1] là con số, match[2] là đơn vị
+            while ((matches = currencyRegex.exec(data.text)) !== null) {
+                const numberPart = matches[1];
+                const unitPart = matches[2];
+                
+                const amount = parseCleanNumber(numberPart, unitPart);
+
+                // Lọc rác:
+                // 1. Số quá nhỏ (< 1000đ) thường sai (trừ khi dùng 'k')
+                // 2. Số quá lớn (> 10 tỷ) thường là mã số thuế nhầm lẫn
+                if (amount >= 1000 && amount < 10000000000) {
+                    // Thường số tiền tổng là số lớn nhất tìm thấy đi kèm đơn vị tiền
+                    if (amount > maxAmount) {
+                        maxAmount = amount;
                     }
                 }
-            });
-
-            if (amountCandidates.length > 0) {
-                foundAmount = Math.max(...amountCandidates);
-            } else {
-                foundAmount = extractAmountFromText(data.text);
             }
+
+            // --- KẾT THÚC LOGIC MỚI ---
 
             loading.style.display = 'none';
             statusText.style.display = 'block';
 
-            if (foundAmount > 0) {
-                amountInput.value = foundAmount;
-                statusText.innerHTML = `✅ Đã tìm thấy số tiền!<br><b>${new Intl.NumberFormat('vi-VN').format(foundAmount)} đ</b>`;
-                if(typeof showToast === 'function') showToast("Đã tự động điền số tiền!", "success");
+            if (maxAmount > 0) {
+                amountInput.value = maxAmount;
+                // Cập nhật lại QR code luôn
+                updateQRCode(); 
+                
+                statusText.innerHTML = `
+                    <div style="color: #15803d; font-weight: bold; margin-bottom: 5px;">✅ Đã tìm thấy: ${new Intl.NumberFormat('vi-VN').format(maxAmount)} đ</div>
+                `;
+                if(typeof showToast === 'function') showToast("Đã điền số tiền từ hóa đơn!", "success");
             } else {
-                statusText.innerHTML = "⚠️ Không tìm thấy số tiền rõ ràng.";
+                // Fallback: Nếu không tìm thấy pattern tiền tệ, thử tìm dòng "Tổng cộng" (Logic cũ nhưng rút gọn)
+                statusText.innerHTML = "⚠️ Không thấy ký hiệu tiền (đ, VND). Đang thử tìm dòng 'Tổng cộng'...";
+                fallbackSearchTotal(data.lines);
             }
 
         } catch (error) {
             loading.style.display = 'none';
             statusText.style.display = 'block';
-            statusText.innerHTML = "❌ Lỗi khi đọc ảnh.";
+            statusText.innerHTML = "❌ Lỗi đọc ảnh. Vui lòng thử ảnh rõ nét hơn.";
             console.error(error);
         }
     });
+
+    // Hàm dự phòng: Tìm theo từ khóa "Tổng cộng" nếu không thấy ký hiệu tiền
+    function fallbackSearchTotal(lines) {
+        let found = 0;
+        const keywords = ['tổng cộng', 'thành tiền', 'total', 'thanh toán'];
+        
+        lines.forEach(line => {
+            const txt = line.text.toLowerCase();
+            if (keywords.some(k => txt.includes(k))) {
+                // Lấy số lớn nhất trong dòng đó
+                const matches = line.text.match(/\d+/g);
+                if (matches) {
+                    const lineMax = Math.max(...matches.map(m => parseInt(m)));
+                    if (lineMax > found && lineMax > 1000) found = lineMax;
+                }
+            }
+        });
+
+        if (found > 0) {
+            amountInput.value = found;
+            updateQRCode();
+            statusText.innerHTML = `✅ Tìm thấy theo từ khóa: <b>${new Intl.NumberFormat().format(found)} đ</b>`;
+        } else {
+            statusText.innerHTML = "❌ Không tìm thấy số tiền nào hợp lệ.";
+        }
+    }
 </script>
 
 <?php include '../../includes/footer.php'; ?>

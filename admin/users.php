@@ -54,7 +54,6 @@ include '../includes/header.php';
     <table class="custom-table">
         <thead>
             <tr>
-                <th>ID</th>
                 <th>Họ Tên</th>
                 <th>Username</th>
                 <th>Email</th>
@@ -68,7 +67,6 @@ include '../includes/header.php';
             <?php if ($users->num_rows > 0): ?>
                 <?php while($u = $users->fetch_assoc()): ?>
                 <tr>
-                    <td>#<?php echo $u['id']; ?></td>
                     <td>
                         <div style="font-weight: 600; color: #334155;"><?php echo htmlspecialchars($u['full_name']); ?></div>
                     </td>
